@@ -29,9 +29,6 @@ custom_cards/**/node_modules/
 custom_cards/**/*.log
 custom_cards/**/.npm/
 
-# Card repos (generated, not part of main workspace)
-/card-repos/
-
 # HA secrets (defense en profondeur)
 **/secrets.yaml
 **/.storage/

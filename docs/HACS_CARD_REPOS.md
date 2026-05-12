@@ -2,23 +2,47 @@
 
 ## Structure actuelle
 
-Les 5 repos séparés sont générés dans `card-repos/` :
+Les 5 cartes sont **directement dans `custom_cards/`** et initialisées comme repos Git indépendants:
 
 ```
-card-repos/
+custom_cards/
 ├── thermo-halo-card/
 │   ├── thermo-halo-card.js
-│   ├── hacs.json (conforme HACS)
-│   ├── README.md
+│   ├── hacs.json          (conforme HACS)
+│   ├── README.md          (optionnel)
 │   ├── .gitignore
-│   └── .git/ (initialisé, main, tag: v0.1.0)
+│   ├── example.yaml       (optionnel)
+│   └── .git/              ✅ (initialisé, main, tag: v0.1.0)
 ├── naive-flex-card/
-├── alpha-area-card/
+│   ├── naive-flex-card.js
+│   ├── hacs.json
+│   ├── package.json       (pour build npm)
+│   ├── .gitignore
+│   ├── README.md
+│   └── .git/              ✅
+├── area-card/
+│   ├── alpha-area-card.js
+│   ├── hacs.json
+│   ├── package.json
+│   ├── .gitignore
+│   └── .git/              ✅
 ├── activity-select-card/
-└── ios-popup-card/
+│   ├── activity-select-card.js
+│   ├── hacs.json
+│   ├── .gitignore
+│   └── .git/              ✅
+└── iOS-PopUp-card/
+    ├── ios-popup-card.js
+    ├── hacs.json
+    ├── .gitignore
+    └── .git/              ✅
 ```
 
-Chaque repo est **complètement indépendant** et prêt à être poussé.
+**Avantages:**
+- Une seule source de vérité (pas de duplication)
+- Chaque carte = repo Git indépendant
+- Versionning local dans chaque dossier
+- Prêt pour HACS immédiatement
 
 ---
 
@@ -28,55 +52,62 @@ Chaque repo est **complètement indépendant** et prêt à être poussé.
 
 Pour chaque carte:
 1. Allez sur https://github.com/new
-2. Repository name: `<card-name>` (ex: `thermo-halo-card`)
+2. Repository name: `thermo-halo-card` (adapter pour chaque)
 3. Owner: `Micpi`
-4. Description: Récupérez depuis le README.md généré
+4. Description: récupérez depuis le README.md
 5. Public
 6. **Initialize empty** (NE PAS cocher "Add README")
 7. Créer
 
+Repos à créer:
+- `https://github.com/Micpi/thermo-halo-card`
+- `https://github.com/Micpi/naive-flex-card`
+- `https://github.com/Micpi/alpha-area-card`
+- `https://github.com/Micpi/activity-select-card`
+- `https://github.com/Micpi/ios-popup-card`
+
 **Option B: Via CLI GitHub (gh)**
 
 ```powershell
-# Installer GitHub CLI: https://cli.github.com/
 gh auth login
 
-# Créer chaque repo
-gh repo create Micpi/thermo-halo-card --public --remote=origin --source=card-repos/thermo-halo-card
-gh repo create Micpi/naive-flex-card --public --remote=origin --source=card-repos/naive-flex-card
-# ... etc
+foreach ($card in @("thermo-halo-card", "naive-flex-card", "alpha-area-card", "activity-select-card", "ios-popup-card")) {
+    gh repo create Micpi/$card --public --source=custom_cards/$(Get-ChildItem custom_cards | where {$_.Name -like "*$card*"} | select -ExpandProperty Name)
+}
 ```
 
 ---
 
 ## Étape 2: Pousser les cartes vers GitHub
 
-**Option A: Automatisé (avec token)**
+**Automatisé (recommandé):**
 
 ```powershell
 # Générer un token: https://github.com/settings/tokens/new
 # Sélectionner: repo (full control of private repositories)
 
-.\scripts\push-card-repos-github.ps1
+.\scripts\push-custom-cards-github.ps1
 # Vous sera demandé le token GitHub
 ```
 
-Ou:
+Ou avec token directement:
 
 ```powershell
-.\scripts\push-card-repos-github.ps1 -GitHubToken "ghp_xxxx..."
+.\scripts\push-custom-cards-github.ps1 -GitHubToken "ghp_xxxx..."
 ```
 
-**Option B: Manuellement (pour chaque repo)**
+**Manuellement (pour une carte):**
 
 ```powershell
-cd card-repos/thermo-halo-card
+cd custom_cards/thermo-halo-card
 
 git remote add origin https://github.com/Micpi/thermo-halo-card.git
 git push -u origin main
 git push origin v0.1.0
 
 # Répéter pour chaque carte
+cd ../naive-flex-card
+# ...etc
 ```
 
 ---
@@ -98,7 +129,14 @@ Dans Home Assistant:
 resources:
   - url: /hacsfiles/thermo-halo-card/thermo-halo-card.js
     type: module
-  # ... etc pour chaque carte
+  - url: /hacsfiles/naive-flex-card/naive-flex-card.js
+    type: module
+  - url: /hacsfiles/alpha-area-card/alpha-area-card.js
+    type: module
+  - url: /hacsfiles/activity-select-card/activity-select-card.js
+    type: module
+  - url: /hacsfiles/ios-popup-card/ios-popup-card.js
+    type: module
 ```
 
 ---
@@ -113,9 +151,18 @@ resources:
 
 ### "Repository structure is not compliant" dans HACS
 
-- Vérifier que `hacs.json` existe dans chaque repo
-- Vérifier le contenu (doit avoir `filename`, `name`)
-- Vérifier que le tag `v0.1.0` existe: `git tag -l`
+- Vérifier que `hacs.json` existe dans le dossier racine du repo
+- Vérifier le contenu de `hacs.json`:
+  ```json
+  {
+    "name": "Thermo Halo Card",
+    "content_in_root": false,
+    "filename": "thermo-halo-card.js",
+    "render_readme": true,
+    "homeassistant": "2024.1.0"
+  }
+  ```
+- Vérifier que le tag `v0.1.0` existe: `cd custom_cards/thermo-halo-card && git tag -l`
 
 ### Erreur de push "Permission denied"
 
@@ -123,11 +170,21 @@ resources:
 - Vérifier que les repos existent sur GitHub
 - Regénérer le token si nécessaire
 
+### `.git` déjà existe
+
+Si vous ré-exécutez le script init:
+```powershell
+# Le script skipe automatiquement les repos déjà initialisés
+.\scripts\init-custom-cards-git.ps1
+```
+
 ---
 
-## Fichiers de configuration générés
+---
 
-### hacs.json (chaque repo)
+## Fichiers de configuration
+
+### hacs.json (chaque dossier custom_cards/<card>)
 
 ```json
 {
@@ -139,15 +196,8 @@ resources:
 }
 ```
 
-### README.md (chaque repo)
+### .gitignore (créé automatiquement dans chaque carte)
 
-- Description de la carte
-- Installation depuis HACS
-- Code d'ajout à Lovelace
-
-### .gitignore
-
-Standard pour JS/Node:
 ```
 node_modules/
 *.log
@@ -160,26 +210,33 @@ dist/
 
 ## Prochaines étapes
 
-**Après publication HACS:**
+### Après publication HACS initiale
 
-1. **Versionning**: Chaque fois qu'une carte est modifiée:
-   - Modifier la carte
-   - `cd card-repos/<card-name>`
-   - `git add .`
-   - `git commit -m "feat: description"`
-   - `git push origin main`
-   - `git tag vX.Y.Z` (SemVer)
-   - `git push origin vX.Y.Z`
+**Versionning des cartes:**
 
-2. **Maintenance du workspace principal**:
-   - Les cartes restent dans `custom_cards/` pour dev
-   - Les repos GitHub sont la source de vérité pour HACS
-   - Syncer manuellement si changements majeurs
+Chaque fois qu'une carte est modifiée:
+
+```powershell
+cd custom_cards/thermo-halo-card
+git add .
+git commit -m "feat: description of change"
+git push origin main
+
+# Créer une nouvelle version (SemVer)
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+**Maintenance du workspace:**
+
+- Les cartes restent dans `custom_cards/` pour développement local
+- Les repos GitHub sont la source de vérité pour HACS
+- À chaque push d'une carte, HACS détecte automatiquement la nouvelle version
 
 ---
 
-## Questions / Support
+## Support
 
-- Vérifier `scripts/` pour les scripts d'automatisation
-- Consulter la doc HACS officielle: https://hacs.xyz/
-- Consulter les instructions VS Code dans `.vscode/copilot-instructions.md`
+- Script de push: `scripts/push-custom-cards-github.ps1`
+- Doc HACS officielle: https://hacs.xyz/
+- Instructions Copilot: `.vscode/copilot-instructions.md`
