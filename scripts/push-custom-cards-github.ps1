@@ -22,13 +22,56 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-PlainTextFromSecureString {
+    param([System.Security.SecureString]$SecureValue)
+
+    $ptr = [System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($SecureValue)
+    try {
+        return [System.Runtime.InteropServices.Marshal]::PtrToStringUni($ptr)
+    } finally {
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeCoTaskMemUnicode($ptr)
+    }
+}
+
+function New-GitHubRepositoryIfMissing {
+    param(
+        [string]$Owner,
+        [string]$Name,
+        [string]$Token
+    )
+
+    $headers = @{
+        Authorization = "Bearer $Token"
+        Accept = "application/vnd.github+json"
+        "X-GitHub-Api-Version" = "2022-11-28"
+    }
+
+    $repoUri = "https://api.github.com/repos/$Owner/$Name"
+    try {
+        Invoke-RestMethod -Uri $repoUri -Headers $headers -Method Get | Out-Null
+        Write-Host "[✓] Repo GitHub existant: $Owner/$Name"
+        return
+    } catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -ne 404) {
+            throw
+        }
+    }
+
+    $body = @{
+        name = $Name
+        private = $false
+    } | ConvertTo-Json
+
+    Invoke-RestMethod -Uri "https://api.github.com/user/repos" -Headers $headers -Method Post -Body $body | Out-Null
+    Write-Host "[✓] Repo GitHub créé: $Owner/$Name"
+}
+
 # Demander le token s'il n'est pas fourni
 if (-not $GitHubToken) {
     Write-Host "`n🔐 GitHub Token requis pour l'authentification`n"
-    $GitHubToken = Read-Host "Entrez votre GitHub personal access token (classic)" -AsSecureString
-    $GitHubToken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($GitHubToken)
-    )
+    $secureToken = Read-Host "Entrez votre GitHub personal access token (classic)" -AsSecureString
+    $GitHubToken = Get-PlainTextFromSecureString -SecureValue $secureToken
 }
 
 if (-not $GitHubToken) {
@@ -54,7 +97,9 @@ Write-Host "========================================`n"
 foreach ($cardName in $cardDirs.Keys) {
     $cardPath = Join-Path $CustomCardsDir $cardName
     $repoName = $cardDirs[$cardName]
-    $repoUrl = "https://${GitHubUsername}:${GitHubToken}@github.com/${GitHubUsername}/${repoName}.git"
+    $repoUrl = "https://github.com/${GitHubUsername}/${repoName}.git"
+    $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${GitHubUsername}:${GitHubToken}")
+    $authHeader = "AUTHORIZATION: basic " + [Convert]::ToBase64String($authBytes)
     
     if (-not (Test-Path $cardPath)) {
         Write-Warning "Dossier non trouvé: $cardPath"
@@ -74,6 +119,8 @@ foreach ($cardName in $cardDirs.Keys) {
     Write-Host "================================`n"
     
     try {
+        New-GitHubRepositoryIfMissing -Owner $GitHubUsername -Name $repoName -Token $GitHubToken
+
         # Check if remote exists
         $remoteExists = & git -C $cardPath remote -v 2>&1 | Select-String "origin"
         
@@ -88,12 +135,12 @@ foreach ($cardName in $cardDirs.Keys) {
         
         # Push main
         Write-Host "[↑] Push main..."
-        & git -C $cardPath push -u origin main 2>&1 | Select-String -Pattern "(master|main|Branch|done|remote)"
+        & git -C $cardPath -c "http.https://github.com/.extraheader=$authHeader" push -u origin main 2>&1 | Select-String -Pattern "(master|main|Branch|done|remote|new branch)"
         Write-Host "[✓] Main poussé"
         
         # Push tag
         Write-Host "[↑] Push tag v0.1.0..."
-        & git -C $cardPath push origin v0.1.0 2>&1 | Select-String -Pattern "(new tag|tag|done)"
+        & git -C $cardPath -c "http.https://github.com/.extraheader=$authHeader" push origin v0.1.0 2>&1 | Select-String -Pattern "(new tag|tag|done)"
         Write-Host "[✓] Tag poussé"
         
         $successCards += $repoName
