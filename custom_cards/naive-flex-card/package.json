@@ -1,0 +1,11 @@
+{
+  "name": "naive-flex-card",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Universal Home Assistant card with configurable controls and horizontal scroll action row",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('naive-flex-card.js','dist/naive-flex-card.js');console.log('dist/naive-flex-card.js generated');\"",
+    "watch": "node -e \"console.log('Watch mode: use your editor/terminal watcher tooling for this card.');\""
+  },
+  "license": "MIT"
+}

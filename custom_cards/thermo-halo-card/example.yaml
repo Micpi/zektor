@@ -1,0 +1,9 @@
+type: custom:thermo-halo-card
+temperature_entity: sensor.hvac_knx_temperature_piece_a_vivre
+climate_entity: climate.piece_a_vivre
+current_label: Temperature actuelle
+target_label: Temperature desiree
+appearance: base
+decimals: 1
+heat_color: "#ff9a3c"
+cool_color: "#32b8ff"

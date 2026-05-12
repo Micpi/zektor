@@ -1,0 +1,11 @@
+{
+  "name": "alpha-area-card",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Alpha Area Card for Home Assistant with visual editor",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('alpha-area-card.js','dist/alpha-area-card.js');fs.copyFileSync('alpha-area-card.js','dist/area-card.js');console.log('dist/alpha-area-card.js generated');console.log('dist/area-card.js generated');\"",
+    "watch": "node -e \"console.log('Watch mode: use your editor/terminal watcher tooling for this card.');\""
+  },
+  "license": "MIT"
+}

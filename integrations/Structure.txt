@@ -1,0 +1,12 @@
+integrations/my_device/
+│
+├── __init__.py
+├── manifest.json
+├── config_flow.py
+├── coordinator.py
+├── sensor.py
+├── switch.py
+├── button.py
+├── const.py
+├── api.py
+└── translations/
