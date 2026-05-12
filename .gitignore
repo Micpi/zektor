@@ -7,6 +7,10 @@
 !.github/workflows/
 !.github/workflows/**
 
+# Metadata et loader HACS
+!hacs.json
+!homeassistant-ai-cards.js
+
 # Autoriser uniquement les cartes et integrations HA
 !custom_cards/
 !custom_cards/**
