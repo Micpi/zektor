@@ -1,0 +1,23 @@
+# Ignore tout par defaut
+*
+
+# Garder ce fichier et le workflow de release auto
+!.gitignore
+!.github/
+!.github/workflows/
+!.github/workflows/**
+
+# Autoriser uniquement les cartes et integrations HA
+!custom_cards/
+!custom_cards/**
+!integrations/
+!integrations/**
+
+# Exclusions locales dans le scope autorise
+custom_cards/**/node_modules/
+custom_cards/**/*.log
+custom_cards/**/.npm/
+
+# HA secrets (defense en profondeur)
+**/secrets.yaml
+**/.storage/

@@ -1,0 +1,40 @@
+name: Auto Release HACS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "custom_cards/**"
+      - "integrations/**"
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: v
+          release_branches: main
+
+      - name: Create GitHub release
+        if: steps.tag_version.outputs.new_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          generate_release_notes: true
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
