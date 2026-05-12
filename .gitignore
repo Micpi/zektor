@@ -7,6 +7,12 @@
 !.github/workflows/
 !.github/workflows/**
 
+# Documentation et scripts
+!docs/
+!docs/**
+!scripts/
+!scripts/**
+
 # Metadata et loader HACS (root repository files)
 !hacs.json
 !homeassistant-ai-cards.js
@@ -22,6 +28,9 @@
 custom_cards/**/node_modules/
 custom_cards/**/*.log
 custom_cards/**/.npm/
+
+# Card repos (generated, not part of main workspace)
+/card-repos/
 
 # HA secrets (defense en profondeur)
 **/secrets.yaml
