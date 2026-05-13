@@ -562,7 +562,7 @@ if ($fullFile.StartsWith($integrationsFullRoot, [System.StringComparison]::Ordin
   }
 
   Write-Info 'Fichier actif detecte dans integrations/, delegation vers publish_current_integration.ps1'
-  & pwsh -File $integrationPublishScript -CurrentFile $CurrentFile -Message $Message -GitHubUsername $GitHubUsername -GitHubToken $GitHubToken -NoPush:$NoPush -NoTag:$NoTag
+  & pwsh -NoProfile -ExecutionPolicy Bypass -File $integrationPublishScript -CurrentFile $CurrentFile -Message $Message -GitHubUsername $GitHubUsername -GitHubToken $GitHubToken -NoPush:$NoPush -NoTag:$NoTag
   exit $LASTEXITCODE
 }
 
