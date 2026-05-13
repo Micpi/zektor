@@ -502,26 +502,25 @@ function Push-CardRepository {
   )
 
   New-GitHubRepositoryIfMissing -Owner $Owner -Name $RepoName -Token $Token
-
-  Ensure-RemoteOrigin -CardPath $CardPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $CardPath
 
-  $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${Owner}:${Token}")
-  $authHeader = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
+  $authUrl = "https://${Owner}:${Token}@github.com/$Owner/$RepoName.git"
+  $cleanUrl = "https://github.com/$Owner/$RepoName.git"
+  & git -C $CardPath remote set-url origin $authUrl | Out-Null
 
-  $env:GIT_TERMINAL_PROMPT = '0'
-  & git -C $CardPath -c 'credential.helper=' -c "http.https://github.com/.extraheader=$authHeader" push -u origin main
-  if ($LASTEXITCODE -ne 0) {
-    throw "Push main echoue pour $RepoName"
-  }
-  Write-OK "Push main OK"
+  try {
+    & git -C $CardPath push -u origin main
+    if ($LASTEXITCODE -ne 0) { throw "Push main echoue pour $RepoName" }
+    Write-OK "Push main OK"
 
-  if ($ShouldPushTag) {
-    & git -C $CardPath -c 'credential.helper=' -c "http.https://github.com/.extraheader=$authHeader" push origin "v$Version"
-    if ($LASTEXITCODE -ne 0) {
-      throw "Push tag echoue pour $RepoName"
+    if ($ShouldPushTag) {
+      & git -C $CardPath push origin "v$Version"
+      if ($LASTEXITCODE -ne 0) { throw "Push tag echoue pour $RepoName" }
+      Write-OK "Push tag v$Version OK"
     }
-    Write-OK "Push tag v$Version OK"
+  }
+  finally {
+    & git -C $CardPath remote set-url origin $cleanUrl | Out-Null
   }
 }
 
@@ -534,21 +533,15 @@ function Push-CardRepositoryWithExistingCredentials {
     [bool]$ShouldPushTag
   )
 
-  Ensure-RemoteOrigin -CardPath $CardPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $CardPath
 
-  $env:GIT_TERMINAL_PROMPT = '0'
-  & git -C $CardPath -c 'credential.helper=' push -u origin main
-  if ($LASTEXITCODE -ne 0) {
-    throw "Push main echoue pour $RepoName (aucun token fourni)."
-  }
+  & git -C $CardPath push -u origin main
+  if ($LASTEXITCODE -ne 0) { throw "Push main echoue pour $RepoName (aucun token fourni)." }
   Write-OK "Push main OK"
 
   if ($ShouldPushTag) {
-    & git -C $CardPath -c 'credential.helper=' push origin "v$Version"
-    if ($LASTEXITCODE -ne 0) {
-      throw "Push tag echoue pour $RepoName (aucun token fourni)."
-    }
+    & git -C $CardPath push origin "v$Version"
+    if ($LASTEXITCODE -ne 0) { throw "Push tag echoue pour $RepoName (aucun token fourni)." }
     Write-OK "Push tag v$Version OK"
   }
 }

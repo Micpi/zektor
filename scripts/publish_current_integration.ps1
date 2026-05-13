@@ -476,7 +476,6 @@ function Invoke-PushRefWithRecovery {
 
 function Set-RepoNonInteractive {
   param([string]$RepoPath)
-  # Disable automatic GC to prevent interactive OneDrive file-locking prompts during push
   & git -C $RepoPath config gc.auto 0 2>$null
   & git -C $RepoPath config gc.autoDetach false 2>$null
 }
@@ -490,31 +489,31 @@ function Invoke-GitPushWithRecovery {
 
   $localCommit = (& git -C $RepoPath rev-parse "${RefName}^{commit}" 2>$null).Trim()
 
-  $env:GIT_TERMINAL_PROMPT = '0'
-  & git -C $RepoPath @GitArgs
-  $exitCode = $LASTEXITCODE
+  & git @GitArgs
+  if ($LASTEXITCODE -eq 0) { return }
 
-  if ($exitCode -eq 0) { return }
+  # Check if remote already has the commit (e.g. previous partial push succeeded)
+  $remoteCommit = (& git -C $RepoPath ls-remote origin $RefName 2>$null | Select-Object -First 1)
+  if ($remoteCommit) { $remoteCommit = ($remoteCommit -split "`t")[0].Trim() }
 
-  $remoteCommit = Get-RemoteRefCommit -RepoPath $RepoPath -RefName $RefName
   if ($remoteCommit -and $localCommit -and $remoteCommit -eq $localCommit) {
     Write-Info "Push reported failure but remote ref is already up to date: $RefName"
     return
   }
 
   Write-Info "Push failed for $RefName, retrying once..."
-  & git -C $RepoPath @GitArgs
-  $exitCode = $LASTEXITCODE
+  & git @GitArgs
+  if ($LASTEXITCODE -eq 0) { return }
 
-  if ($exitCode -eq 0) { return }
+  $remoteCommit = (& git -C $RepoPath ls-remote origin $RefName 2>$null | Select-Object -First 1)
+  if ($remoteCommit) { $remoteCommit = ($remoteCommit -split "`t")[0].Trim() }
 
-  $remoteCommit = Get-RemoteRefCommit -RepoPath $RepoPath -RefName $RefName
   if ($remoteCommit -and $localCommit -and $remoteCommit -eq $localCommit) {
-    Write-Info "Push retry still reported failure but remote ref is up to date: $RefName"
+    Write-Info "Push retry reported failure but remote ref is up to date: $RefName"
     return
   }
 
-  throw "Push failed for ref $RefName (exit $exitCode)"
+  throw "Push failed for ref $RefName"
 }
 
 function Push-RepositoryWithToken {
@@ -527,17 +526,25 @@ function Push-RepositoryWithToken {
     [bool]$PushTag
   )
 
-  Ensure-RemoteOrigin -RepoPath $RepoPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $RepoPath
 
-  $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${Owner}:${Token}")
-  $authHeader = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
-  $commonArgs = @('-C', $RepoPath, '-c', 'credential.helper=', '-c', "http.https://github.com/.extraheader=$authHeader")
+  # Use token-embedded URL for reliable auth on Windows (no credential helper needed)
+  $authUrl = "https://${Owner}:${Token}@github.com/$Owner/$RepoName.git"
+  $cleanUrl = "https://github.com/$Owner/$RepoName.git"
+  & git -C $RepoPath remote set-url origin $authUrl | Out-Null
 
-  Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -GitArgs ($commonArgs + @('push', '-u', 'origin', 'main'))
+  try {
+    Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' `
+      -GitArgs @('-C', $RepoPath, 'push', '-u', 'origin', 'main')
 
-  if ($PushTag) {
-    Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -GitArgs ($commonArgs + @('push', 'origin', "v$Version"))
+    if ($PushTag) {
+      Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" `
+        -GitArgs @('-C', $RepoPath, 'push', 'origin', "v$Version")
+    }
+  }
+  finally {
+    # Always restore the clean URL (never persist token in git config)
+    & git -C $RepoPath remote set-url origin $cleanUrl | Out-Null
   }
 }
 
@@ -550,15 +557,14 @@ function Push-RepositoryWithLocalCredentials {
     [bool]$PushTag
   )
 
-  Ensure-RemoteOrigin -RepoPath $RepoPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $RepoPath
 
-  $commonArgs = @('-C', $RepoPath, '-c', 'credential.helper=')
-
-  Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -GitArgs ($commonArgs + @('push', '-u', 'origin', 'main'))
+  Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' `
+    -GitArgs @('-C', $RepoPath, 'push', '-u', 'origin', 'main')
 
   if ($PushTag) {
-    Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -GitArgs ($commonArgs + @('push', 'origin', "v$Version"))
+    Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" `
+      -GitArgs @('-C', $RepoPath, 'push', 'origin', "v$Version")
   }
 }
 
