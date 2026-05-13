@@ -481,6 +481,42 @@ function Set-RepoNonInteractive {
   & git -C $RepoPath config gc.autoDetach false 2>$null
 }
 
+function Invoke-GitPushWithRecovery {
+  param(
+    [string]$RepoPath,
+    [string]$RefName,
+    [string[]]$GitArgs
+  )
+
+  $localCommit = (& git -C $RepoPath rev-parse "${RefName}^{commit}" 2>$null).Trim()
+
+  $env:GIT_TERMINAL_PROMPT = '0'
+  & git -C $RepoPath @GitArgs
+  $exitCode = $LASTEXITCODE
+
+  if ($exitCode -eq 0) { return }
+
+  $remoteCommit = Get-RemoteRefCommit -RepoPath $RepoPath -RefName $RefName
+  if ($remoteCommit -and $localCommit -and $remoteCommit -eq $localCommit) {
+    Write-Info "Push reported failure but remote ref is already up to date: $RefName"
+    return
+  }
+
+  Write-Info "Push failed for $RefName, retrying once..."
+  & git -C $RepoPath @GitArgs
+  $exitCode = $LASTEXITCODE
+
+  if ($exitCode -eq 0) { return }
+
+  $remoteCommit = Get-RemoteRefCommit -RepoPath $RepoPath -RefName $RefName
+  if ($remoteCommit -and $localCommit -and $remoteCommit -eq $localCommit) {
+    Write-Info "Push retry still reported failure but remote ref is up to date: $RefName"
+    return
+  }
+
+  throw "Push failed for ref $RefName (exit $exitCode)"
+}
+
 function Push-RepositoryWithToken {
   param(
     [string]$RepoPath,
@@ -493,17 +529,15 @@ function Push-RepositoryWithToken {
 
   Ensure-RemoteOrigin -RepoPath $RepoPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $RepoPath
+
   $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${Owner}:${Token}")
   $authHeader = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
+  $commonArgs = @('-C', $RepoPath, '-c', 'credential.helper=', '-c', "http.https://github.com/.extraheader=$authHeader")
 
-  Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -PushAction {
-    & git -C $RepoPath -c "http.https://github.com/.extraheader=$authHeader" push -u origin main
-  }
+  Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -GitArgs ($commonArgs + @('push', '-u', 'origin', 'main'))
 
   if ($PushTag) {
-    Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -PushAction {
-      & git -C $RepoPath -c "http.https://github.com/.extraheader=$authHeader" push origin "v$Version"
-    }
+    Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -GitArgs ($commonArgs + @('push', 'origin', "v$Version"))
   }
 }
 
@@ -519,14 +553,12 @@ function Push-RepositoryWithLocalCredentials {
   Ensure-RemoteOrigin -RepoPath $RepoPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $RepoPath
 
-  Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -PushAction {
-    & git -C $RepoPath push -u origin main
-  }
+  $commonArgs = @('-C', $RepoPath, '-c', 'credential.helper=')
+
+  Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -GitArgs ($commonArgs + @('push', '-u', 'origin', 'main'))
 
   if ($PushTag) {
-    Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -PushAction {
-      & git -C $RepoPath push origin "v$Version"
-    }
+    Invoke-GitPushWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -GitArgs ($commonArgs + @('push', 'origin', "v$Version"))
   }
 }
 

@@ -509,14 +509,15 @@ function Push-CardRepository {
   $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${Owner}:${Token}")
   $authHeader = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
 
-  & git -C $CardPath -c "http.https://github.com/.extraheader=$authHeader" push -u origin main
+  $env:GIT_TERMINAL_PROMPT = '0'
+  & git -C $CardPath -c 'credential.helper=' -c "http.https://github.com/.extraheader=$authHeader" push -u origin main
   if ($LASTEXITCODE -ne 0) {
     throw "Push main echoue pour $RepoName"
   }
   Write-OK "Push main OK"
 
   if ($ShouldPushTag) {
-    & git -C $CardPath -c "http.https://github.com/.extraheader=$authHeader" push origin "v$Version"
+    & git -C $CardPath -c 'credential.helper=' -c "http.https://github.com/.extraheader=$authHeader" push origin "v$Version"
     if ($LASTEXITCODE -ne 0) {
       throw "Push tag echoue pour $RepoName"
     }
@@ -536,14 +537,15 @@ function Push-CardRepositoryWithExistingCredentials {
   Ensure-RemoteOrigin -CardPath $CardPath -Owner $Owner -RepoName $RepoName
   Set-RepoNonInteractive -RepoPath $CardPath
 
-  & git -C $CardPath push -u origin main
+  $env:GIT_TERMINAL_PROMPT = '0'
+  & git -C $CardPath -c 'credential.helper=' push -u origin main
   if ($LASTEXITCODE -ne 0) {
     throw "Push main echoue pour $RepoName (aucun token fourni)."
   }
   Write-OK "Push main OK"
 
   if ($ShouldPushTag) {
-    & git -C $CardPath push origin "v$Version"
+    & git -C $CardPath -c 'credential.helper=' push origin "v$Version"
     if ($LASTEXITCODE -ne 0) {
       throw "Push tag echoue pour $RepoName (aucun token fourni)."
     }
