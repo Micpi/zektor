@@ -1,0 +1,41 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Blaze PowerZone Connect",
+                "description": "Connectez-vous à un amplificateur Blaze PowerZone Connect. Entrez l'adresse IP de l'amplificateur.",
+                "data": {
+                    "host": "Adresse IP",
+                    "port": "Port",
+                    "name": "Nom de l'appareil"
+                }
+            },
+            "zeroconf_confirm": {
+                "title": "Blaze PowerZone Connect détecté",
+                "description": "Un amplificateur Blaze PowerZone Connect a été trouvé à {host} (Modèle : {model}). Voulez-vous l'ajouter ?",
+                "data": {
+                    "name": "Nom de l'appareil"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Impossible de se connecter à l'amplificateur. Vérifiez l'adresse IP et que l'amplificateur est allumé.",
+            "unknown": "Une erreur inattendue s'est produite."
+        },
+        "abort": {
+            "already_configured": "Cet amplificateur est déjà configuré.",
+            "cannot_connect": "Impossible de se connecter à l'amplificateur.",
+            "unknown": "Une erreur inattendue s'est produite."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Options Blaze PowerZone Connect",
+                "data": {
+                    "name": "Nom de l'appareil"
+                }
+            }
+        }
+    }
+}

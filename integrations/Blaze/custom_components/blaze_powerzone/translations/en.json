@@ -1,0 +1,41 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Blaze PowerZone Connect",
+                "description": "Connect to a Blaze PowerZone Connect amplifier. Enter the IP address of the amplifier.",
+                "data": {
+                    "host": "IP Address",
+                    "port": "Port",
+                    "name": "Device Name"
+                }
+            },
+            "zeroconf_confirm": {
+                "title": "Blaze PowerZone Connect Discovered",
+                "description": "A Blaze PowerZone Connect amplifier was found at {host} (Model: {model}). Would you like to add it?",
+                "data": {
+                    "name": "Device Name"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Unable to connect to the amplifier. Please verify the IP address and that the amplifier is powered on.",
+            "unknown": "An unexpected error occurred."
+        },
+        "abort": {
+            "already_configured": "This amplifier is already configured.",
+            "cannot_connect": "Unable to connect to the amplifier.",
+            "unknown": "An unexpected error occurred."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Blaze PowerZone Connect Options",
+                "data": {
+                    "name": "Device Name"
+                }
+            }
+        }
+    }
+}

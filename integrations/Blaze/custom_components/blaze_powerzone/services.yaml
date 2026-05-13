@@ -1,0 +1,17 @@
+send_raw_command:
+  name: Envoyer une commande brute Blaze
+  description: Execute une commande API brute (GET, SET, INC, SUBSCRIBE, UNSUBSCRIBE, POWER_ON, POWER_OFF).
+  fields:
+    entry_id:
+      name: Entry ID
+      description: ID de l'entree de configuration Blaze. Requis si plusieurs appareils Blaze sont configures.
+      required: false
+      selector:
+        text:
+    command:
+      name: Commande
+      description: Commande API Blaze brute a envoyer.
+      required: true
+      example: GET API_VERSION
+      selector:
+        text:
