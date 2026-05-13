@@ -48,6 +48,19 @@ function Get-GitHubTokenOrNull {
   $machineToken = [Environment]::GetEnvironmentVariable('GITHUB_TOKEN', 'Machine')
   if (-not [string]::IsNullOrWhiteSpace($machineToken)) { return $machineToken }
 
+  $gh = Get-Command gh -ErrorAction SilentlyContinue
+  if ($gh) {
+    try {
+      $ghToken = (& gh auth token 2>$null)
+      if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($ghToken)) {
+        return $ghToken.Trim()
+      }
+    }
+    catch {
+      # Ignore gh token lookup errors and continue without token.
+    }
+  }
+
   return $null
 }
 
@@ -313,6 +326,33 @@ function Ensure-GitHubReleaseForTag {
   Write-OK "GitHub release created: $Owner/$RepoName $Tag"
 }
 
+function Ensure-GitHubReleaseForTagWithGhCli {
+  param(
+    [string]$Owner,
+    [string]$RepoName,
+    [string]$Tag
+  )
+
+  $gh = Get-Command gh -ErrorAction SilentlyContinue
+  if (-not $gh) {
+    throw 'GitHub CLI (gh) is not installed; cannot create release without token.'
+  }
+
+  $repoRef = "$Owner/$RepoName"
+  & gh release view $Tag --repo $repoRef 1>$null 2>$null
+  if ($LASTEXITCODE -eq 0) {
+    Write-Info "GitHub release already exists: $repoRef $Tag"
+    return
+  }
+
+  & gh release create $Tag --repo $repoRef --title $Tag --generate-notes
+  if ($LASTEXITCODE -ne 0) {
+    throw "GitHub release creation failed with gh for $repoRef $Tag"
+  }
+
+  Write-OK "GitHub release created with gh: $repoRef $Tag"
+}
+
 function Write-PublishNotes {
   param(
     [string]$RepoPath,
@@ -380,6 +420,67 @@ function Write-PublishNotes {
   }
 }
 
+function Get-RemoteRefCommit {
+  param(
+    [string]$RepoPath,
+    [string]$RefName
+  )
+
+  $line = (& git -C $RepoPath ls-remote origin $RefName 2>$null | Select-Object -First 1)
+  if (-not $line) {
+    return $null
+  }
+
+  $parts = $line -split "`t"
+  if ($parts.Length -lt 1) {
+    return $null
+  }
+
+  return $parts[0].Trim()
+}
+
+function Invoke-PushRefWithRecovery {
+  param(
+    [string]$RepoPath,
+    [string]$RefName,
+    [scriptblock]$PushAction
+  )
+
+  $localCommit = (& git -C $RepoPath rev-parse "${RefName}^{commit}" 2>$null).Trim()
+
+  & $PushAction
+  if ($LASTEXITCODE -eq 0) {
+    return
+  }
+
+  $remoteCommit = Get-RemoteRefCommit -RepoPath $RepoPath -RefName $RefName
+  if ($remoteCommit -and $localCommit -and $remoteCommit -eq $localCommit) {
+    Write-Info "Push reported failure but remote ref is already up to date: $RefName"
+    return
+  }
+
+  Write-Info "Push failed for $RefName, retrying once..."
+  & $PushAction
+  if ($LASTEXITCODE -eq 0) {
+    return
+  }
+
+  $remoteCommit = Get-RemoteRefCommit -RepoPath $RepoPath -RefName $RefName
+  if ($remoteCommit -and $localCommit -and $remoteCommit -eq $localCommit) {
+    Write-Info "Push retry still reported failure but remote ref is up to date: $RefName"
+    return
+  }
+
+  throw "Push failed for ref $RefName"
+}
+
+function Set-RepoNonInteractive {
+  param([string]$RepoPath)
+  # Disable automatic GC to prevent interactive OneDrive file-locking prompts during push
+  & git -C $RepoPath config gc.auto 0 2>$null
+  & git -C $RepoPath config gc.autoDetach false 2>$null
+}
+
 function Push-RepositoryWithToken {
   param(
     [string]$RepoPath,
@@ -391,18 +492,17 @@ function Push-RepositoryWithToken {
   )
 
   Ensure-RemoteOrigin -RepoPath $RepoPath -Owner $Owner -RepoName $RepoName
+  Set-RepoNonInteractive -RepoPath $RepoPath
   $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${Owner}:${Token}")
   $authHeader = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
 
-  & git -C $RepoPath -c "http.https://github.com/.extraheader=$authHeader" push -u origin main
-  if ($LASTEXITCODE -ne 0) {
-    throw "Push main failed for $RepoName"
+  Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -PushAction {
+    & git -C $RepoPath -c "http.https://github.com/.extraheader=$authHeader" push -u origin main
   }
 
   if ($PushTag) {
-    & git -C $RepoPath -c "http.https://github.com/.extraheader=$authHeader" push origin "v$Version"
-    if ($LASTEXITCODE -ne 0) {
-      throw "Push tag failed for $RepoName"
+    Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -PushAction {
+      & git -C $RepoPath -c "http.https://github.com/.extraheader=$authHeader" push origin "v$Version"
     }
   }
 }
@@ -417,16 +517,15 @@ function Push-RepositoryWithLocalCredentials {
   )
 
   Ensure-RemoteOrigin -RepoPath $RepoPath -Owner $Owner -RepoName $RepoName
+  Set-RepoNonInteractive -RepoPath $RepoPath
 
-  & git -C $RepoPath push -u origin main
-  if ($LASTEXITCODE -ne 0) {
-    throw "Push main failed for $RepoName"
+  Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName 'refs/heads/main' -PushAction {
+    & git -C $RepoPath push -u origin main
   }
 
   if ($PushTag) {
-    & git -C $RepoPath push origin "v$Version"
-    if ($LASTEXITCODE -ne 0) {
-      throw "Push tag failed for $RepoName"
+    Invoke-PushRefWithRecovery -RepoPath $RepoPath -RefName "refs/tags/v$Version" -PushAction {
+      & git -C $RepoPath push origin "v$Version"
     }
   }
 }
@@ -444,7 +543,7 @@ if (-not $fullFile.StartsWith($fullRoot, [System.StringComparison]::OrdinalIgnor
   exit 1
 }
 
-$relative = $fullFile.Substring($fullRoot.Length).TrimStart('\\', '/')
+$relative = $fullFile.Substring($fullRoot.Length).TrimStart('\', '/')
 $segments = $relative -split '[\\/]+'
 if ($segments.Length -lt 2) {
   Write-Fail "Unable to determine integration folder from path: $relative"
@@ -566,9 +665,20 @@ catch {
   exit 1
 }
 
-if (-not $NoTag -and $version -and $GitHubToken) {
+if (-not $NoTag -and $version) {
   try {
-    Ensure-GitHubReleaseForTag -Owner $GitHubUsername -RepoName $repoName -Tag "v$version" -Token $GitHubToken
+    if ($GitHubToken) {
+      try {
+        Ensure-GitHubReleaseForTag -Owner $GitHubUsername -RepoName $repoName -Tag "v$version" -Token $GitHubToken
+      }
+      catch {
+        Write-Info ('Token release creation failed, fallback to gh CLI: ' + $_.Exception.Message)
+        Ensure-GitHubReleaseForTagWithGhCli -Owner $GitHubUsername -RepoName $repoName -Tag "v$version"
+      }
+    }
+    else {
+      Ensure-GitHubReleaseForTagWithGhCli -Owner $GitHubUsername -RepoName $repoName -Tag "v$version"
+    }
   }
   catch {
     Write-Fail ("Release creation failed for v" + $version + ': ' + $_.Exception.Message)

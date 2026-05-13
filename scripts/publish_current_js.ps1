@@ -325,6 +325,20 @@ function Get-GitHubTokenOrNull {
     return $machineToken
   }
 
+  $gh = Get-Command gh -ErrorAction SilentlyContinue
+  if ($gh) {
+    try {
+      $ghToken = (& gh auth token 2>$null)
+      if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($ghToken)) {
+        Write-Info 'Token GitHub lu depuis gh auth token.'
+        return $ghToken.Trim()
+      }
+    }
+    catch {
+      # Ignore gh token lookup errors and continue without token.
+    }
+  }
+
   return $null
 }
 
@@ -443,6 +457,40 @@ function Ensure-GitHubReleaseForTag {
   }
 }
 
+function Ensure-GitHubReleaseForTagWithGhCli {
+  param(
+    [string]$Owner,
+    [string]$RepoName,
+    [string]$Tag
+  )
+
+  $gh = Get-Command gh -ErrorAction SilentlyContinue
+  if (-not $gh) {
+    throw 'GitHub CLI (gh) introuvable: impossible de creer une release sans token.'
+  }
+
+  $repoRef = "$Owner/$RepoName"
+  & gh release view $Tag --repo $repoRef 1>$null 2>$null
+  if ($LASTEXITCODE -eq 0) {
+    Write-Info "  → Release deja present: $repoRef / $Tag"
+    return
+  }
+
+  & gh release create $Tag --repo $repoRef --title $Tag --generate-notes
+  if ($LASTEXITCODE -ne 0) {
+    throw "Echec creation release avec gh pour $repoRef / $Tag"
+  }
+
+  Write-OK "  → Release cree via gh: $repoRef / $Tag"
+}
+
+function Set-RepoNonInteractive {
+  param([string]$RepoPath)
+  # Disable automatic GC to prevent interactive OneDrive file-locking prompts during push
+  & git -C $RepoPath config gc.auto 0 2>$null
+  & git -C $RepoPath config gc.autoDetach false 2>$null
+}
+
 function Push-CardRepository {
   param(
     [string]$CardPath,
@@ -456,6 +504,7 @@ function Push-CardRepository {
   New-GitHubRepositoryIfMissing -Owner $Owner -Name $RepoName -Token $Token
 
   Ensure-RemoteOrigin -CardPath $CardPath -Owner $Owner -RepoName $RepoName
+  Set-RepoNonInteractive -RepoPath $CardPath
 
   $authBytes = [System.Text.Encoding]::ASCII.GetBytes("${Owner}:${Token}")
   $authHeader = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
@@ -485,6 +534,7 @@ function Push-CardRepositoryWithExistingCredentials {
   )
 
   Ensure-RemoteOrigin -CardPath $CardPath -Owner $Owner -RepoName $RepoName
+  Set-RepoNonInteractive -RepoPath $CardPath
 
   & git -C $CardPath push -u origin main
   if ($LASTEXITCODE -ne 0) {
@@ -657,18 +707,24 @@ else {
   }
 
   if (-not $NoTag -and $version) {
-    if ($GitHubToken) {
-      try {
-        Write-Info "Etape finale: creation du release GitHub..."
-        Ensure-GitHubReleaseForTag -Owner $GitHubUsername -RepoName $repoName -Tag "v$version" -Token $GitHubToken
+    try {
+      Write-Info "Etape finale: creation du release GitHub..."
+      if ($GitHubToken) {
+        try {
+          Ensure-GitHubReleaseForTag -Owner $GitHubUsername -RepoName $repoName -Tag "v$version" -Token $GitHubToken
+        }
+        catch {
+          Write-Info ('  → Echec via token, fallback gh CLI: ' + $_.Exception.Message)
+          Ensure-GitHubReleaseForTagWithGhCli -Owner $GitHubUsername -RepoName $repoName -Tag "v$version"
+        }
       }
-      catch {
-        Write-Fail ("Creation release echouee pour v" + $version + ": " + $_.Exception.Message)
-        exit 1
+      else {
+        Ensure-GitHubReleaseForTagWithGhCli -Owner $GitHubUsername -RepoName $repoName -Tag "v$version"
       }
     }
-    else {
-      Write-Info 'Release GitHub non cree automatiquement: token absent.'
+    catch {
+      Write-Fail ("Creation release echouee pour v" + $version + ": " + $_.Exception.Message)
+      exit 1
     }
   }
 }

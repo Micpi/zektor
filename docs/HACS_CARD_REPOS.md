@@ -46,6 +46,29 @@ custom_cards/
 
 ---
 
+## Nouveau flux recommande
+
+Pour une nouvelle carte:
+
+```powershell
+.\scripts\new-custom-card.ps1 -CardName my-awesome-card -DisplayName "My Awesome Card"
+```
+
+Puis:
+
+1. Ouvrir `custom_cards/my-awesome-card/my-awesome-card.js`
+2. Adapter la carte
+3. Lancer `Publish HA` depuis VS Code sur ce fichier actif
+
+`Publish HA` sait maintenant:
+- creer `README.md`, `hacs.json` et `.gitignore` s'ils manquent
+- initialiser Git dans le dossier de la carte si besoin
+- calculer la prochaine version et mettre a jour `package.json`
+- creer le repo GitHub s'il n'existe pas
+- pousser `main` et le tag correspondant
+
+---
+
 ## Étape 1: Créer les repos GitHub
 
 **Option A: Manuellement (interface web)**
@@ -83,9 +106,6 @@ foreach ($card in @("thermo-halo-card", "naive-flex-card", "alpha-area-card", "a
 **Automatisé (recommandé):**
 
 ```powershell
-# Générer un token: https://github.com/settings/tokens/new
-# Sélectionner: repo (full control of private repositories)
-
 .\scripts\push-custom-cards-github.ps1
 # Vous sera demandé le token GitHub
 ```
@@ -94,6 +114,13 @@ Ou avec token directement:
 
 ```powershell
 .\scripts\push-custom-cards-github.ps1 -GitHubToken "ghp_xxxx..."
+```
+
+Ou sans prompt en definissant une variable d'environnement:
+
+```powershell
+$env:GITHUB_TOKEN = "ghp_xxxx..."
+pwsh -File .\scripts\publish_current_js.ps1 -CurrentFile .\custom_cards\my-awesome-card\my-awesome-card.js
 ```
 
 **Manuellement (pour une carte):**
@@ -170,13 +197,11 @@ resources:
 - Vérifier que les repos existent sur GitHub
 - Regénérer le token si nécessaire
 
-### `.git` déjà existe
+### Le bouton `Publish HA` demande encore un token
 
-Si vous ré-exécutez le script init:
-```powershell
-# Le script skipe automatiquement les repos déjà initialisés
-.\scripts\init-custom-cards-git.ps1
-```
+- Verifier que `GITHUB_TOKEN` est defini dans l'environnement VS Code
+- Sinon passer `-GitHubToken` au script
+- Sinon le prompt interactif s'affiche automatiquement
 
 ---
 
@@ -237,6 +262,8 @@ git push origin v0.2.0
 
 ## Support
 
+- Generateur de carte: `scripts/new-custom-card.ps1`
+- Publication 1 clic: `scripts/publish_current_js.ps1`
 - Script de push: `scripts/push-custom-cards-github.ps1`
 - Doc HACS officielle: https://hacs.xyz/
 - Instructions Copilot: `.vscode/copilot-instructions.md`

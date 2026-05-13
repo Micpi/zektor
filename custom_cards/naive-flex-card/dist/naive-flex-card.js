@@ -250,7 +250,7 @@ class NaiveFlexCard extends LitElement {
               a: acc.a + color.a * weight,
             }
           },
-          { r: 0, g: 0, b: 0, a: 0 },
+          { r: 0, g: 0, b: 0, a: 0 }
         )
         return {
           r: Math.round(base.r),
@@ -364,7 +364,12 @@ class NaiveFlexCard extends LitElement {
     const cardBg = this._parseColorValue(this.config?.style?.background_color, themeBg)
     const baseBg = cardBg.a < 1 ? this._blendColors(cardBg, themeBg) : cardBg
 
-    const presetOverlay = this._parseColorValue(this._presetStyle.overlay, { r: 0, g: 0, b: 0, a: 0 })
+    const presetOverlay = this._parseColorValue(this._presetStyle.overlay, {
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 0,
+    })
     if (presetOverlay.a > 0) {
       return this._blendColors(presetOverlay, baseBg)
     }
@@ -377,7 +382,12 @@ class NaiveFlexCard extends LitElement {
     if (!this.config?.style?.auto_text_contrast) return configured
 
     const effectiveBg = this._effectiveBackgroundColor()
-    const presetOverlay = this._parseColorValue(this._presetStyle.overlay, { r: 0, g: 0, b: 0, a: 0 })
+    const presetOverlay = this._parseColorValue(this._presetStyle.overlay, {
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 0,
+    })
     const overlayIsDark = presetOverlay.a > 0 && this._relativeLuminance(presetOverlay) < 0.25
     if (overlayIsDark) {
       const lightText = { r: 248, g: 250, b: 252, a: 1 }
