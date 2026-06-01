@@ -1,6 +1,14 @@
 # Naive Flex Card
 
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
+[![Version](https://img.shields.io/badge/Version-v0.1.1-0EA5E9?style=for-the-badge)](https://github.com/Micpi/naive-flex-card)
+[![Type](https://img.shields.io/badge/Type-Universal%20Control%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/naive-flex-card)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
+
 Custom card Home Assistant complete et parametrique, avec support natif des usages suivants:
+
+---
 
 - light
 - button / switch / script / scene
@@ -21,17 +29,21 @@ Points clefs:
 - Tailles de boutons minimum, maximum et personnalisee
 - Editeur visuel Lovelace inclus
 
+## Usage recommande
+
+Naive Flex Card sert de carte polyvalente de reference quand une seule carte doit combiner un controle principal, des actions rapides et une presentation homogene avec le style Naive Flex du workspace.
+
 ## Installation
 
 1. Copier le dossier `custom_cards/naive-flex-card` dans votre environnement de dev.
-2. Ajouter la ressource Lovelace:
+1. Ajouter la ressource Lovelace:
 
 ```yaml
 url: /local/naive-flex-card.js
 type: module
 ```
 
-3. Ajouter la carte:
+1. Ajouter la carte:
 
 ```yaml
 type: custom:naive-flex-card
@@ -118,6 +130,10 @@ Chaque bouton accepte:
 - `service` + `service_data` (si `call-service`)
 - `value` (volume, de 0 a 1) pour `set-value`
 - `position` (cover, de 0 a 100) pour `set-value`
+
+## Editeur
+
+La carte embarque un editeur visuel complet et constitue la base ergonomique a reutiliser pour les futures cartes riches du workspace.
 
 ## Build local
 

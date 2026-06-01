@@ -1,60 +1,59 @@
 # Activity Select Card
 
-Carte Home Assistant personnalisée pour sélectionner des activités via des boutons ronds sur une ligne scrollable.
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
+[![Version](https://img.shields.io/badge/Version-v1.2.0-0EA5E9?style=for-the-badge)](https://github.com/Micpi/activity-select-card)
+[![Type](https://img.shields.io/badge/Type-Selector%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/activity-select-card)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
+
+Carte Home Assistant pour piloter des activites via une rangée de boutons ronds, scrollables et entierement configurables depuis l'editeur visuel.
+
+---
+
+## Table des matieres
+
+- Installation
+- Fonctionnalites
+- Configuration rapide
+- Reference configuration
+- Exemples
+- FAQ
 
 ## Installation
 
-1. **Copier le fichier** `activity-select-card.js` dans le dossier `config/www/` de votre Home Assistant.
+1. Ajouter le depot dans HACS comme depot Lovelace ou copier manuellement le fichier JS.
+2. Verifier la ressource Lovelace.
+3. Ajouter la carte depuis le picker Home Assistant.
 
-2. **Ajouter la ressource** dans Home Assistant :
-   - Aller dans **Paramètres → Tableaux de bord → ⋮ (menu) → Ressources**
-   - Cliquer sur **+ Ajouter une ressource**
-   - URL : `/local/activity-select-card.js`
-   - Type : **Module JavaScript**
+## Ressource Lovelace
 
-3. **Ajouter la carte** :
-   - Modifier un tableau de bord → **+ Ajouter une carte**
-   - Chercher **Activity Select Card** dans la liste
-   - Tout se configure via l'éditeur graphique !
+```yaml
+resources:
+  - url: /hacsfiles/activity-select-card/activity-select-card.js
+    type: module
+```
 
-## Configuration par l'éditeur graphique
+## Fonctionnalites
 
-Tous les paramètres sont modifiables sans toucher au YAML :
+- Boutons ronds avec icone, image ou texte seul.
+- Scroll horizontal fluide quand la liste depasse la largeur de la carte.
+- Etat actif synchronise avec input_select ou input_text.
+- Editeur visuel complet avec ajout, suppression, reordonnancement et apercu visuel.
+- Couleurs, tailles, bordures et affichage du libelle configurables.
+- Image par activite possible via URL ou import local.
 
-| Paramètre | Description | Défaut |
-|---|---|---|
-| **Titre carte** | Titre affiché au-dessus des boutons | *(vide)* |
-| **Entité** | `input_select` ou `input_text` à piloter | *(optionnel)* |
-| **Taille bouton** | Diamètre des boutons en px | `80` |
-| **Taille icône** | Taille de l'icône MDI en px | `40` |
-| **Taille texte** | Taille de la police du label en px | `12` |
-| **Espacement** | Gap entre les boutons en px | `12` |
-| **Couleur active** | Couleur du bouton sélectionné | `var(--primary-color)` |
-| **Couleur inactive** | Couleur de fond des boutons | `var(--card-background-color)` |
-
-### Pour chaque activité
-
-| Champ | Description |
-|---|---|
-| **Nom** | Texte affiché sous l'icône (optionnel) |
-| **Icône** | Icône MDI, ex: `mdi:television` (optionnel) |
-| **Valeur** | Valeur envoyée à l'entité quand on clique |
-| **Couleur icône** | Couleur personnalisée de l'icône (optionnel) |
-
-Les activités sont réordonnables avec les boutons ▲▼.
-
-## Exemple YAML (optionnel)
+## Configuration rapide
 
 ```yaml
 type: custom:activity-select-card
-title: Activités
+title: Activites
 entity: input_select.activite
 button_size: 80
 icon_size: 40
 font_size: 12
 gap: 12
-active_color: "var(--primary-color)"
-inactive_color: "var(--card-background-color, #444)"
+active_color: var(--primary-color)
+inactive_color: var(--card-background-color, #444)
 activities:
   - name: TV
     icon: mdi:television
@@ -65,21 +64,86 @@ activities:
   - name: Jeux
     icon: mdi:gamepad-variant
     value: jeux
-  - name: Film
-    icon: mdi:movie
-    value: film
-  - icon: mdi:dots-horizontal
-    value: autre
 ```
 
-## Fonctionnalités
+## Reference configuration
 
-- **Boutons ronds** avec icône et/ou titre
-- **Icônes auto-formatées** : rendu homogène quelle que soit l'icône
-- **Scroll horizontal** quand les boutons dépassent la largeur
-- **Taille personnalisable** (bouton, icône, texte, espacement)
-- **Couleurs personnalisables** (actif/inactif, couleur par icône)
-- **Éditeur graphique complet** : aucun YAML nécessaire
-- **Compatible `input_select` et `input_text`**
-- **Animation tactile** au clic
-- **Réordonnement** des activités dans l'éditeur
+| Option | Type | Defaut | Description |
+| --- | --- | --- | --- |
+| title | string | vide | Titre de la carte |
+| entity | string | vide | input_select ou input_text a piloter |
+| button_size | number | 80 | Diametre du bouton |
+| icon_size | number | 40 | Taille de l'icone ou de l'image |
+| font_size | number | 12 | Taille du libelle |
+| gap | number | 12 | Espacement horizontal |
+| active_color | string | var(--primary-color) | Couleur de l'activite active |
+| inactive_color | string | var(--card-background-color, #444) | Couleur de fond inactive |
+| border_width | number | 0 | Largeur de bordure |
+| border_color | string | var(--divider-color, #e0e0e0) | Couleur de bordure |
+| show_name | boolean | true | Afficher le nom globalement |
+| activities | array | requis | Liste des activites |
+
+### Champs par activite
+
+| Champ | Description |
+| --- | --- |
+| name | Libelle visible sous l'icone |
+| icon | Icone MDI ou URL image |
+| image | Image explicite pour l'activite |
+| value | Valeur envoyee a l'entite |
+| icon_color | Couleur specifique de l'icone |
+| show_name | Override local du libelle |
+
+## Exemples
+
+### Input select classique
+
+```yaml
+type: custom:activity-select-card
+title: Activites salon
+entity: input_select.activite_salon
+activities:
+  - name: TV
+    icon: mdi:television
+    value: tv
+  - name: Film
+    icon: mdi:movie-open
+    value: movie
+  - name: Jeux
+    icon: mdi:gamepad-variant
+    value: game
+```
+
+### Boutons avec images
+
+```yaml
+type: custom:activity-select-card
+title: Sources
+entity: input_text.media_source
+button_size: 88
+icon_size: 44
+activities:
+  - name: Apple TV
+    image: /local/icons/apple-tv.png
+    value: appletv
+  - name: PS5
+    image: /local/icons/ps5.png
+    value: ps5
+  - name: Vinyl
+    icon: mdi:record-player
+    value: vinyl
+```
+
+## FAQ
+
+### Quelle entite utiliser
+
+Utiliser idealement un input_select. Un input_text fonctionne aussi si tu veux stocker une valeur libre.
+
+### Pourquoi le bouton actif ne change pas
+
+Verifier que la valeur envoyee dans activities[].value correspond exactement a l'etat expose par l'entite cible.
+
+### Puis-je ne montrer qu'une image sans texte
+
+Oui. Laisser name vide ou desactiver show_name globalement ou par activite.

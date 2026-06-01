@@ -1,6 +1,14 @@
 # Ultimate Tabbed Card
 
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
+[![Version](https://img.shields.io/badge/Version-v0.1.3-0EA5E9?style=for-the-badge)](https://github.com/Micpi/ultimate-tabbed-card)
+[![Type](https://img.shields.io/badge/Type-Container%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/ultimate-tabbed-card)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
+
 Ultimate Tabbed Card est un conteneur Lovelace a onglets, pense pour agreger plusieurs cartes dans un seul composant avec lazy rendering, conservation d etat et editeur visuel complet.
+
+---
 
 ## Points forts
 

@@ -1,8 +1,16 @@
 # iOS Popup Card — Home Assistant
 
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
+[![Version](https://img.shields.io/badge/Version-v3.0.0-0EA5E9?style=for-the-badge)](https://github.com/Micpi/iOS-PopUp-card)
+[![Type](https://img.shields.io/badge/Type-Popup%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/iOS-PopUp-card)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
+
 Un composant Lovelace qui affiche un popup (bottom-sheet) inspiré d'iOS : animations fluides,
 gestes natifs et boutons d'accès rapide. Ce document décrit l'installation, la configuration
 et donne des exemples prêts à l'emploi.
+
+---
 
 ## Table des matières
 
