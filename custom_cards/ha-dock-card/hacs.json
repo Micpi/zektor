@@ -1,0 +1,8 @@
+{
+  "content_in_root": false,
+  "filename": "ios-dock.js",
+  "render_readme": true,
+  "homeassistant": "2024.1.0",
+  "name": "HA Dock Card",
+  "version": "0.1.1"
+}
