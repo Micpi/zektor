@@ -505,6 +505,15 @@ function Invoke-GitPushWithRecovery {
   & git @GitArgs
   if ($LASTEXITCODE -eq 0) { return }
 
+  if ($RefName -eq 'refs/heads/main') {
+    $forceArgs = @('-C', $RepoPath, 'push', '--force-with-lease', 'origin', 'main')
+    & git @forceArgs
+    if ($LASTEXITCODE -eq 0) {
+      Write-Info "Force-with-lease push succeeded for main"
+      return
+    }
+  }
+
   $remoteCommit = (& git -C $RepoPath ls-remote origin $RefName 2>$null | Select-Object -First 1)
   if ($remoteCommit) { $remoteCommit = ($remoteCommit -split "`t")[0].Trim() }
 

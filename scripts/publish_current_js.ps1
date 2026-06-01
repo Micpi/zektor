@@ -551,6 +551,20 @@ function Invoke-GitPushWithRetry {
       & git -C $RepoPath fetch $Remote --prune 2>$null
     }
 
+    if ($attempt -eq 2 -and ($RefSpec -eq 'main' -or $RefSpec -eq 'refs/heads/main')) {
+      if ([string]::IsNullOrWhiteSpace($AuthHeader)) {
+        & git -C $RepoPath push --force-with-lease $Remote $RefSpec
+      }
+      else {
+        & git -C $RepoPath -c "http.https://github.com/.extraheader=$AuthHeader" push --force-with-lease $Remote $RefSpec
+      }
+
+      if ($LASTEXITCODE -eq 0) {
+        Write-OK "Push main OK (force-with-lease)"
+        return
+      }
+    }
+
     $attempt += 1
   }
 
