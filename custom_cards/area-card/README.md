@@ -10,14 +10,14 @@ Alpha Area Card affiche une zone Home Assistant avec image, etat synthetique et 
 
 ---
 
-## Points forts
+## ✨ Points forts
 
 - prise en charge native des zones Home Assistant
 - editeur graphique integre pour les entites, styles et actions
 - affichage de capteurs, toggles et liste d'entites secondaires
 - rendu concis et rapide, avec rafraichissement limite aux changements utiles
 
-## Installation
+## 📦 Installation
 
 ### HACS
 
@@ -33,7 +33,7 @@ resources:
 
 Copiez ensuite alpha-area-card.js dans www puis rechargez le dashboard.
 
-## Utilisation minimale
+## 🧪 Utilisation minimale
 
 ```yaml
 type: custom:alpha-area-card
@@ -41,7 +41,7 @@ title: Salon
 area: salon
 ```
 
-## Exemple plus complet
+## 🧪 Exemple plus complet
 
 ```yaml
 type: custom:alpha-area-card
@@ -62,7 +62,7 @@ tap_action:
   action: more-info
 ```
 
-## Options principales
+## 🧭 Options principales
 
 - title: titre affiche sur la carte
 - area: identifiant de zone Home Assistant
@@ -76,11 +76,11 @@ tap_action:
 - state_color: applique les couleurs d'etat Home Assistant
 - card_mod.style: surcharge CSS si card-mod est utilise
 
-## Editeur graphique
+## 🛠️ Editeur graphique
 
 La carte expose un editeur natif dans le picker Lovelace. Elle peut donc etre ajoutee depuis l'interface sans passer par YAML, puis affinee manuellement si besoin.
 
-## Build local
+## 🧱 Build local
 
 Depuis custom_cards/area-card:
 
@@ -93,7 +93,7 @@ Sorties attendues:
 - dist/alpha-area-card.js
 - dist/area-card.js
 
-## Exemples
+## 🧪 Exemples
 
 Voir le fichier de demos:
 

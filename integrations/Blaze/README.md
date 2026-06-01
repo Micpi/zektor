@@ -97,7 +97,7 @@ avec découverte automatique réseau, polling temps réel et accès à tous les 
 | `port` | `integer` | `7621` | Port TCP de l'API Blaze |
 | `name` | `string` | `Blaze PowerZone Connect` | Nom affiché dans HA |
 
-### Options Flow
+### 🧭 Options Flow
 
 Après installation, vous pouvez modifier les paramètres via **Paramètres** → **Appareils & Services** → **Blaze PowerZone Connect** → **Configurer**.
 
@@ -170,7 +170,7 @@ data:
   command: "OUT-1.GAIN=-6.0"   # Commande au format REGISTRE=VALEUR
 ```
 
-### Exemples de commandes
+### 🧪 Exemples de commandes
 
 ```yaml
 # Muter la sortie 2

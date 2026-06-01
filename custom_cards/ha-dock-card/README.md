@@ -10,7 +10,7 @@ HA Dock Card provides an iOS-style floating dock for Lovelace navigation, with g
 
 ---
 
-## Features
+## ✨ Features
 
 - floating or static dock positions
 - glassmorphism visual style with blur and opacity tuning
@@ -18,7 +18,7 @@ HA Dock Card provides an iOS-style floating dock for Lovelace navigation, with g
 - active route highlighting
 - native visual editor based on HA selectors
 
-## Installation
+## 📦 Installation
 
 1. Add this repository to HACS as a custom Lovelace repository.
 2. Install the card from HACS.
@@ -30,7 +30,7 @@ resources:
     type: module
 ```
 
-## Basic Example
+## 🧪 Basic Example
 
 ```yaml
 type: custom:ha-dock-card
@@ -47,7 +47,7 @@ buttons:
     link: /lovelace/climate
 ```
 
-## Styled Example
+## 🧪 Styled Example
 
 ```yaml
 type: custom:ha-dock-card
@@ -76,7 +76,7 @@ buttons:
     link: /lovelace/security
 ```
 
-## Main Options
+## 🧭 Main Options
 
 - position: static, top or bottom
 - offset_y: distance from screen edge
@@ -92,6 +92,6 @@ buttons:
 - opacity_light and opacity_dark: dock opacity per theme
 - buttons: item list with name, icon, link or navigation action
 
-## Editor
+## 🛠️ Editor
 
 The card exposes a Lovelace config form and is intended to be adjusted visually first, then refined in YAML when needed.

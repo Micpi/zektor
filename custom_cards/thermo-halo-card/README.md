@@ -10,7 +10,7 @@ Carte Lovelace compacte pour thermostat Home Assistant avec halo thermique dynam
 
 ---
 
-## Table des matieres
+## 📖 Sommaire
 
 - Installation
 - Fonctionnalites
@@ -20,13 +20,13 @@ Carte Lovelace compacte pour thermostat Home Assistant avec halo thermique dynam
 - Exemples
 - FAQ
 
-## Installation
+## 📦 Installation
 
 1. Ajouter le depot dans HACS comme depot Lovelace.
 2. Installer Thermo Halo Card depuis HACS.
 3. Verifier la ressource JS si HACS ne l'ajoute pas automatiquement.
 
-## Ressource Lovelace
+## 🧩 Ressource Lovelace
 
 ```yaml
 resources:
@@ -34,7 +34,7 @@ resources:
     type: module
 ```
 
-## Fonctionnalites
+## ✨ Fonctionnalites
 
 - Affichage tres lisible de la temperature actuelle.
 - Affichage conditionnel de la consigne quand le climate est actif.
@@ -43,7 +43,7 @@ resources:
 - Editeur visuel natif base sur ha-form.
 - Tap actions Home Assistant: more-info, toggle, navigate, url, perform-action, assist, none.
 
-## Configuration rapide
+## ⚙️ Configuration rapide
 
 ```yaml
 type: custom:thermo-halo-card
@@ -59,7 +59,7 @@ tap_action:
   action: more-info
 ```
 
-## Reference configuration
+## 🧭 Reference configuration
 
 | Option | Type | Defaut | Description |
 | --- | --- | --- | --- |
@@ -74,7 +74,7 @@ tap_action:
 | idle_halo | string | transparent | Couleur du halo quand le climate est inactif |
 | tap_action | object | { action: more-info } | Action executee au clic |
 
-## Actions au tap
+## 🎯 Actions au tap
 
 - more-info: ouvre le more-info de l'entite cible.
 - toggle: bascule de preference l'entite climate.
@@ -84,7 +84,7 @@ tap_action:
 - assist: declenche Assist.
 - none: desactive l'interaction.
 
-## Exemples
+## 🧪 Exemples
 
 ### Affichage compact
 
@@ -112,7 +112,7 @@ tap_action:
   navigation_path: /lovelace/climat
 ```
 
-## FAQ
+## ❓ FAQ
 
 ### La consigne ne s'affiche pas
 

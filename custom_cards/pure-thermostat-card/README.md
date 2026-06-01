@@ -10,7 +10,7 @@ Minimal thermostat Lovelace card inspired by Home Assistant native thermostat, w
 
 ---
 
-## Features
+## ✨ Features
 
 - Circular thermostat dial
 - Target and current temperature display
@@ -29,11 +29,11 @@ Minimal thermostat Lovelace card inspired by Home Assistant native thermostat, w
 - style fields aligned with the workspace card system
 - native Lovelace editor support for quick setup
 
-## Installation
+## 📦 Installation
 
 Add this repository in HACS as a Lovelace plugin.
 
-## Lovelace Resource
+## 🧩 Lovelace Resource
 
 ```yaml
 resources:
@@ -41,7 +41,7 @@ resources:
     type: module
 ```
 
-## Basic Usage
+## 🧪 Basic Usage
 
 ```yaml
 type: custom:pure-thermostat-card
@@ -54,7 +54,7 @@ style:
   active_color: "#ff7a1a"
 ```
 
-## Recommended Setup
+## 🧪 Recommended Setup
 
 ```yaml
 type: custom:pure-thermostat-card
@@ -81,7 +81,7 @@ style:
   text_color: "#f9fafb"
 ```
 
-## Advanced Example
+## 🧪 Advanced Example
 
 ```yaml
 type: custom:pure-thermostat-card
@@ -108,7 +108,7 @@ style:
   text_color: "#f9fafb"
 ```
 
-## Main Options
+## 🧭 Main Options
 
 - entity: climate entity to control
 - name: custom title
@@ -121,6 +121,6 @@ style:
 - mode_whitelist: restrict visible HVAC modes
 - style: visual preset, colors and surface tuning
 
-## Editor
+## 🛠️ Editor
 
 The card can be created from the Lovelace picker and edited through its visual editor, then fine-tuned in YAML for advanced styling.

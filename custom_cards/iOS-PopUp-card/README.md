@@ -12,20 +12,20 @@ et donne des exemples prêts à l'emploi.
 
 ---
 
-## Table des matières
+## 📖 Sommaire
 
-- [Installation](#installation)
-- [Principes](#principes)
-- [Configuration rapide](#configuration-rapide)
-- [Options détaillées](#options-détaillées)
-- [Sous-boutons & actions](#sous-boutons--actions)
-- [Exemples](#exemples)
-- [Dépannage](#dépannage)
-- [Changelog & crédits](#changelog--crédits)
+- Installation
+- Principes
+- Configuration rapide
+- Options detaillees
+- Sous-boutons & actions
+- Exemples
+- Depannage
+- Changelog & credits
 
 ---
 
-## Installation
+## 📦 Installation
 
 1. Copiez `ios-popup-card.js` dans `/config/www/community/ios-popup-card/`.
 
@@ -42,7 +42,7 @@ lovelace:
 
 ---
 
-## Principes
+## 🧠 Principes
 
 - **Activation** : le popup s'ouvre via navigation (`navigate` vers `#popup` ou `#popup-<hash>`).
 - **Contenu** : vous pouvez insérer n'importe quelle carte Lovelace dans le popup.
@@ -51,7 +51,7 @@ lovelace:
 
 ---
 
-## Configuration rapide
+## ⚙️ Configuration rapide
 
 Configuration minimale :
 
@@ -75,7 +75,7 @@ tap_action:
 
 ---
 
-## Options détaillées
+## 🧭 Options détaillées
 
 Extraits des options principales :
 
@@ -92,7 +92,7 @@ Remarque : des valeurs vides ne remplacent pas les styles par défaut — la car
 
 ---
 
-## Sous-boutons & actions
+## 🎯 Sous-boutons & actions
 
 Jusqu'à 2 sous-boutons peuvent être affichés dans l'en-tête. Chaque bouton accepte :
 
@@ -123,7 +123,7 @@ Conseil : testez vos `entity_id` et services séparément avant de les intégrer
 
 ---
 
-## Exemples
+## 🧪 Exemples
 
 ### 1) Contrôle des lumières
 
@@ -226,7 +226,7 @@ cards:
 
 ---
 
-## Dépannage
+## 🩺 Depannage
 
 - Popup invisible : vérifiez le hash (`#popup`), la ressource JS et videz le cache.
 - Boutons inactifs : vérifiez `entity_id`, permissions et logs Home Assistant.
@@ -236,7 +236,7 @@ Pour les erreurs JS, ouvrez la console (F12) et copiez les messages.
 
 ---
 
-## Changelog & crédits
+## 📋 Changelog & credits
 
 - **v2.1** — Intégration `ui_action`, meilleures détections de gestes, fallback pour anciennes configs.
 
@@ -252,7 +252,7 @@ Si vous souhaitez, je peux :
 
 ---
 
-## FAQ (questions fréquentes)
+## ❓ FAQ (questions fréquentes)
 
 Q: Comment ouvrir le popup depuis un bouton ?
 
@@ -275,7 +275,7 @@ R: Oui, mais évitez d'en mettre trop (risque d'UX et de performance). Préfére
 
 ---
 
-## Snippets YAML pratiques
+## 🧩 Snippets YAML pratiques
 
 1) Ouvrir le popup depuis une carte bouton (existant) :
 
@@ -322,7 +322,7 @@ sub_btn_2:
 
 ---
 
-## Changelog détaillé
+## 📋 Changelog detaille
 
 - **v2.1** (Mars 2026)
   - Migration des actions vers le sélecteur natif `ui_action`.

@@ -11,7 +11,7 @@ cartes Lovelace, dashboards, automations et thèmes.
 - Git
 - VS Code avec les extensions recommandées (voir `.vscode/extensions.json`)
 
-## Installation
+## 📦 Installation
 
 ```powershell
 # Cloner et installer les dépendances Python

@@ -10,7 +10,7 @@ Carte Home Assistant pour piloter des activites via une rangée de boutons ronds
 
 ---
 
-## Table des matieres
+## 📖 Sommaire
 
 - Installation
 - Fonctionnalites
@@ -19,13 +19,13 @@ Carte Home Assistant pour piloter des activites via une rangée de boutons ronds
 - Exemples
 - FAQ
 
-## Installation
+## 📦 Installation
 
 1. Ajouter le depot dans HACS comme depot Lovelace ou copier manuellement le fichier JS.
 2. Verifier la ressource Lovelace.
 3. Ajouter la carte depuis le picker Home Assistant.
 
-## Ressource Lovelace
+## 🧩 Ressource Lovelace
 
 ```yaml
 resources:
@@ -33,7 +33,7 @@ resources:
     type: module
 ```
 
-## Fonctionnalites
+## ✨ Fonctionnalites
 
 - Boutons ronds avec icone, image ou texte seul.
 - Scroll horizontal fluide quand la liste depasse la largeur de la carte.
@@ -42,7 +42,7 @@ resources:
 - Couleurs, tailles, bordures et affichage du libelle configurables.
 - Image par activite possible via URL ou import local.
 
-## Configuration rapide
+## ⚙️ Configuration rapide
 
 ```yaml
 type: custom:activity-select-card
@@ -66,7 +66,7 @@ activities:
     value: jeux
 ```
 
-## Reference configuration
+## 🧭 Reference configuration
 
 | Option | Type | Defaut | Description |
 | --- | --- | --- | --- |
@@ -94,7 +94,7 @@ activities:
 | icon_color | Couleur specifique de l'icone |
 | show_name | Override local du libelle |
 
-## Exemples
+## 🧪 Exemples
 
 ### Input select classique
 
@@ -134,7 +134,7 @@ activities:
     value: vinyl
 ```
 
-## FAQ
+## ❓ FAQ
 
 ### Quelle entite utiliser
 

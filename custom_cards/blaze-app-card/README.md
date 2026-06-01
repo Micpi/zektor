@@ -10,7 +10,7 @@ Carte Lovelace orientee exploitation professionnelle pour l'integration Blaze Po
 
 ---
 
-## Pourquoi cette carte
+## ✨ Pourquoi cette carte
 
 - Interface "console" claire pour les operations quotidiennes.
 - Decouverte automatique des entites Blaze (`sensor`, `number`, `select`, `switch`, `button`).
@@ -18,7 +18,7 @@ Carte Lovelace orientee exploitation professionnelle pour l'integration Blaze Po
 - Monitoring visuel des signaux avec jauges et tendances (sparkline) quand des echantillons sont exposes.
 - Editeur visuel en accordeons (style Naive Flex), avec mapping configurable par mots-cles.
 
-## Fonctionnalites principales
+## ✨ Fonctionnalites principales
 
 - Onglets metier: `Overview`, `Controls`, `DSP`, `Signal`, `Variables`, `API`.
 - Affichage condense des informations systeme (firmware, uptime, statut, etc.).
@@ -30,13 +30,13 @@ Carte Lovelace orientee exploitation professionnelle pour l'integration Blaze Po
 - Sparkline automatique si l'entite expose `samples`, `history` ou `values` dans les attributs.
 - Panneau API brute (`blaze_powerzone.send_raw_command`) activable/desactivable.
 
-## Installation
+## 📦 Installation
 
 1. Ajouter le depot dans HACS en tant que "Lovelace" custom repository.
 2. Installer `Blaze App Card` depuis HACS.
 3. Verifier la ressource JS (HACS le fait generalement automatiquement).
 
-## Ressource Lovelace
+## 🧩 Ressource Lovelace
 
 ```yaml
 resources:
@@ -44,7 +44,7 @@ resources:
     type: module
 ```
 
-## Exemple minimal
+## 🧪 Exemple minimal
 
 ```yaml
 type: custom:blaze-app-card
@@ -53,7 +53,7 @@ entity_prefix: blaze_powerzone
 show_raw_panel: true
 ```
 
-## Exemple avance (pro)
+## 🧪 Exemple avance (pro)
 
 ```yaml
 type: custom:blaze-app-card
@@ -75,7 +75,7 @@ signal_sensor_keywords: signal,rssi,snr,temperature,voltage,current,power,latenc
 dsp_keywords: dsp,eq,equalizer,crossover,delay,phase,filter,limiter,compressor,preset,routing
 ```
 
-## Reference configuration
+## 🧭 Reference configuration
 
 - `title` (string, defaut: `Blaze Control Center`): titre affiche dans l'entete.
 - `entity_prefix` (string, defaut: `blaze_powerzone`): prefix de detection des entites Blaze.
@@ -93,7 +93,7 @@ dsp_keywords: dsp,eq,equalizer,crossover,delay,phase,filter,limiter,compressor,p
 - `signal_sensor_keywords` (string CSV, defaut: `signal,rssi,snr,quality,level,input,output,clip,temperature,temp,voltage,current,power,latency`): mapping des capteurs pour gauges et monitoring signal.
 - `dsp_keywords` (string CSV, defaut: `dsp,eq,equalizer,crossover,xo,delay,phase,polarity,filter,limiter,compressor,preset,profile,routing,matrix`): mapping des controles DSP.
 
-## Service Home Assistant utilise
+## 🛠️ Service Home Assistant utilise
 
 ```yaml
 service: blaze_powerzone.send_raw_command
@@ -102,7 +102,7 @@ data:
   entry_id: 7b4f357278ef4216baaa111222333444
 ```
 
-## FAQ
+## ❓ FAQ
 
 ### La carte n'affiche presque rien
 

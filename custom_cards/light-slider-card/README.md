@@ -10,7 +10,7 @@ Carte Lovelace personnalisée pour Home Assistant — contrôle de lumière avec
 
 ---
 
-## Points forts
+## ✨ Points forts
 
 - controle rapide d une ou plusieurs lumieres
 - slider fluide avec retour visuel immediat
@@ -18,7 +18,7 @@ Carte Lovelace personnalisée pour Home Assistant — contrôle de lumière avec
 - configuration visuelle disponible dans Lovelace
 - presentation compacte adaptee au mobile
 
-## Installation
+## 📦 Installation
 
 1. Copier `light-slider-card.js` dans `/config/www/`
 2. Ajouter la ressource dans Home Assistant :
@@ -26,7 +26,7 @@ Carte Lovelace personnalisée pour Home Assistant — contrôle de lumière avec
    - Ajouter : `/local/light-slider-card.js` — Type : **Module JavaScript**
 3. Recharger la page (Ctrl+F5)
 
-## Utilisation
+## 🧪 Utilisation
 
 ### Configuration minimale
 
@@ -81,7 +81,7 @@ mobile_slider_padding: 12
 mobile_icon_size: "21px"
 ```
 
-## Options
+## 🧭 Options
 
 - `entity` (défaut: —): Entité lumière unique.
 - `entities` (défaut: —): Liste d'entités lumière (`string` ou objet).
@@ -105,7 +105,7 @@ mobile_icon_size: "21px"
 - `mobile_slider_padding` (défaut: `slider_padding - 4`, min 8): Padding horizontal en mode compact.
 - `mobile_icon_size` (défaut: `icon_size - 3`): Taille de l'icône en mode compact.
 
-## Options par entité (`entities`)
+## 🧭 Options par entité (`entities`)
 
 Chaque entrée de `entities` peut être :
 
@@ -142,6 +142,6 @@ Clés disponibles par entité :
 - laissez `live_update: false` si vous voulez limiter les appels pendant le glissement
 - gardez `compact_mobile` active sur smartphone pour une carte plus dense
 
-## Editeur
+## 🛠️ Editeur
 
 La carte peut etre ajoutee depuis le picker Lovelace puis ajustee visuellement avant une finition YAML si necessaire.

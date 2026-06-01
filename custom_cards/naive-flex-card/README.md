@@ -29,11 +29,11 @@ Points clefs:
 - Tailles de boutons minimum, maximum et personnalisee
 - Editeur visuel Lovelace inclus
 
-## Usage recommande
+## 🧪 Usage recommande
 
 Naive Flex Card sert de carte polyvalente de reference quand une seule carte doit combiner un controle principal, des actions rapides et une presentation homogene avec le style Naive Flex du workspace.
 
-## Installation
+## 📦 Installation
 
 1. Copier le dossier `custom_cards/naive-flex-card` dans votre environnement de dev.
 1. Ajouter la ressource Lovelace:
@@ -50,7 +50,7 @@ type: custom:naive-flex-card
 entity: light.salon
 ```
 
-## Configuration rapide
+## ⚙️ Configuration rapide
 
 ```yaml
 type: custom:naive-flex-card
@@ -76,7 +76,7 @@ button_row:
         brightness_pct: 50
 ```
 
-## Exemple cover
+## 🧪 Exemple cover
 
 ```yaml
 type: custom:naive-flex-card
@@ -106,7 +106,7 @@ button_row:
       position: 100
 ```
 
-## Options principales
+## 🧭 Options principales
 
 - `entity`: entite cible
 - `control_type`: `auto | light | button | volume | cover`
@@ -119,7 +119,7 @@ button_row:
 - `button_row.min_button_width`, `button_row.max_button_width`, `button_row.button_width`
 - `button_row.buttons[]`: actions rapides custom (editees visuellement dans l'UI)
 
-## Format button_row.buttons
+## 🧭 Format button_row.buttons
 
 Chaque bouton accepte:
 
@@ -131,11 +131,11 @@ Chaque bouton accepte:
 - `value` (volume, de 0 a 1) pour `set-value`
 - `position` (cover, de 0 a 100) pour `set-value`
 
-## Editeur
+## 🛠️ Editeur
 
 La carte embarque un editeur visuel complet et constitue la base ergonomique a reutiliser pour les futures cartes riches du workspace.
 
-## Build local
+## 🧱 Build local
 
 Depuis `custom_cards/naive-flex-card`:
 

@@ -10,7 +10,7 @@ Ultimate Tabbed Card est un conteneur Lovelace a onglets, pense pour agreger plu
 
 ---
 
-## Points forts
+## ✨ Points forts
 
 - conteneur a onglets avec rendu paresseux
 - conservation facultative des cartes deja ouvertes
@@ -18,11 +18,11 @@ Ultimate Tabbed Card est un conteneur Lovelace a onglets, pense pour agreger plu
 - editeur graphique natif pour composer les tabs
 - utile pour condenser dashboards desktop et mobile sans multiplier les vues
 
-## Installation
+## 📦 Installation
 
 Ajouter ce depot dans HACS avec le type Lovelace.
 
-## Ressource Lovelace
+## 🧩 Ressource Lovelace
 
 ```yaml
 resources:
@@ -30,7 +30,7 @@ resources:
     type: module
 ```
 
-## Exemple minimal
+## 🧪 Exemple minimal
 
 ```yaml
 type: custom:tabbed-card
@@ -49,7 +49,7 @@ tabs:
       entity: climate.salon
 ```
 
-## Exemple recommande
+## 🧪 Exemple recommande
 
 ```yaml
 type: custom:tabbed-card
@@ -82,7 +82,7 @@ tabs:
         - light.cuisine
 ```
 
-## Options principales
+## 🧭 Options principales
 
 - options.defaultTabIndex: onglet affiche a l ouverture
 - options.keepAlive: conserve les cartes deja rendues
@@ -93,6 +93,6 @@ tabs:
 - styles.inactive_color: couleur des onglets inactifs
 - tabs: liste des onglets avec attributes et card
 
-## Editeur
+## 🛠️ Editeur
 
 La carte expose un editeur natif et sert de conteneur compose pour assembler rapidement plusieurs cartes du workspace dans un seul bloc navigable.
