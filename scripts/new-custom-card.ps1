@@ -183,7 +183,24 @@ Write-OK '.gitignore cree'
 $readme = @(
   "# $DisplayName"
   ''
+  "[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)"
+  "[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)"
+  "[![Version](https://img.shields.io/badge/Version-v0.1.0-0EA5E9?style=for-the-badge)](https://github.com/Micpi/$CardName)"
+  "[![Type](https://img.shields.io/badge/Type-Custom%20Lovelace%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/$CardName)"
+  "[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)"
+  ''
   "$DisplayName is a Home Assistant Lovelace custom card."
+  ''
+  '---'
+  ''
+  '## Table des matieres'
+  ''
+  '- Installation'
+  '- Fonctionnalites'
+  '- Configuration rapide'
+  '- Reference configuration'
+  '- Exemples'
+  '- FAQ'
   ''
   '## Installation'
   ''
@@ -191,19 +208,49 @@ $readme = @(
   '2. Install the card from HACS.'
   '3. Add the resource below if needed.'
   ''
+  '## Ressource Lovelace'
+  ''
   '```yaml'
   'resources:'
   "  - url: /hacsfiles/$CardName/$entryFileName"
   '    type: module'
   '```'
   ''
-  '## Example'
+  '## Fonctionnalites'
+  ''
+  '- Clean badges with strong contrast.'
+  '- Concise presentation aligned with the Blaze-style baseline.'
+  '- Designed for practical Home Assistant use.'
+  ''
+  '## Configuration rapide'
   ''
   '```yaml'
   "type: custom:$CardName"
   "entity: $EntityId"
   "name: $DisplayName"
   '```'
+  ''
+  '## Reference configuration'
+  ''
+  '| Option | Type | Defaut | Description |'
+  '| --- | --- | --- | --- |'
+  '| entity | string | requis | Entite controlee |'
+  '| name | string | vide | Titre affiche |'
+  ''
+  '## Exemples'
+  ''
+  '### Exemple minimal'
+  ''
+  '```yaml'
+  "type: custom:$CardName"
+  "entity: $EntityId"
+  '```'
+  ''
+  '## FAQ'
+  ''
+  '### Comment faire évoluer la carte ?'
+  ''
+  'Modifier le fichier JS principal puis relancer la publication.'
 ) -join [Environment]::NewLine
 Set-Content -Path (Join-Path $cardPath 'README.md') -Value $readme
 Write-OK 'README.md cree'

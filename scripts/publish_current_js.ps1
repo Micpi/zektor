@@ -144,11 +144,30 @@ function Ensure-CardMetadata {
     @(
       "# $displayName"
       ''
-      'Carte Lovelace personnalisee pour Home Assistant.'
+      '[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)'
+      '[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)'
+      "[![Version](https://img.shields.io/badge/Version-v$Version-0EA5E9?style=for-the-badge)](https://github.com/$Owner/$RepoName)"
+      "[![Type](https://img.shields.io/badge/Type-Custom%20Lovelace%20Card-0284C7?style=for-the-badge)](https://github.com/$Owner/$RepoName)"
+      '[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)'
+      ''
+      "$displayName is a Home Assistant Lovelace custom card."
+      ''
+      '---'
+      ''
+      '## Table des matieres'
+      ''
+      '- Installation'
+      '- Fonctionnalites'
+      '- Configuration rapide'
+      '- Reference configuration'
+      '- Exemples'
+      '- FAQ'
       ''
       '## Installation'
       ''
-      'Ajouter ce depot dans HACS avec le type Lovelace.'
+      '1. Add this repository to HACS as a custom Lovelace repository.'
+      '2. Install the card from HACS.'
+      '3. Add the resource below if needed.'
       ''
       '## Ressource Lovelace'
       ''
@@ -157,6 +176,41 @@ function Ensure-CardMetadata {
       "  - url: /hacsfiles/$RepoName/$EntryFileName"
       '    type: module'
       '```'
+      ''
+      '## Fonctionnalites'
+      ''
+      '- Clean badges with strong contrast.'
+      '- Concise presentation aligned with the Blaze-style baseline.'
+      '- Practical Home Assistant card template for new repositories.'
+      ''
+      '## Configuration rapide'
+      ''
+      '```yaml'
+      "type: custom:$RepoName"
+      "entity: sensor.example"
+      '```'
+      ''
+      '## Reference configuration'
+      ''
+      '| Option | Type | Defaut | Description |'
+      '| --- | --- | --- | --- |'
+      '| entity | string | requis | Entite controlee |'
+      '| title | string | vide | Titre affiche |'
+      ''
+      '## Exemples'
+      ''
+      '### Exemple minimal'
+      ''
+      '```yaml'
+      "type: custom:$RepoName"
+      "entity: sensor.example"
+      '```'
+      ''
+      '## FAQ'
+      ''
+      '### Comment evoluer le style ?'
+      ''
+      'Appliquer ce modele aux cartes existantes puis publier.'
     ) | Set-Content -Path $readmePath
     Write-OK "README.md cree"
   }

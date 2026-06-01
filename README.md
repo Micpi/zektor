@@ -39,6 +39,18 @@ npm install
 
 Guide complet des commandes: [docs/commandes.md](docs/commandes.md)
 
+## Baseline de documentation
+
+Tous les README du workspace doivent suivre la meme ligne visuelle que Blaze:
+
+- badges contrastes en premiere ligne
+- lien Buy Me a Coffee dans la zone badges, pas en pied de page
+- titre clair, texte court et direct
+- sommaire, sections structurees et exemples concrets
+- ton technique, propre, lisible et constant
+
+Ce standard est applique aux README existants et aux futurs README generes par les scripts.
+
 ## Catalogue du workspace
 
 - Inventaire des cartes et integrations: [README_WORKSPACE_CATALOG.md](README_WORKSPACE_CATALOG.md)

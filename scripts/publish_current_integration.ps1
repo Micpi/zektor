@@ -223,17 +223,47 @@ function Ensure-IntegrationMetadata {
     @(
       "# $DisplayName"
       ''
-      'Custom Home Assistant integration for Blaze amplifiers.'
+      '[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)'
+      '[![HACS](https://img.shields.io/badge/HACS-Custom%20Integration-41BDF5?style=for-the-badge)](https://hacs.xyz)'
+      "[![Version](https://img.shields.io/badge/Version-v$Version-0EA5E9?style=for-the-badge)](https://github.com/Micpi/$repoName)"
+      "[![Type](https://img.shields.io/badge/Type-Home%20Assistant%20Integration-0284C7?style=for-the-badge)](https://github.com/Micpi/$repoName)"
+      '[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)'
       ''
-      '## Installation via HACS'
+      "$DisplayName custom integration for Home Assistant."
+      ''
+      '---'
+      ''
+      '## Table des matieres'
+      ''
+      '- Installation'
+      '- Configuration'
+      '- Entites'
+      '- Services'
+      '- FAQ'
+      ''
+      '## Installation'
       ''
       '1. Add this repository in HACS as type Integration.'
       '2. Install the integration from HACS.'
       '3. Restart Home Assistant.'
       ''
-      '## Domain'
+      '## Configuration'
       ''
-      "- $Domain"
+      "- Domain: $Domain"
+      ''
+      '## Entites'
+      ''
+      '- Document the entities exposed by the integration.'
+      ''
+      '## Services'
+      ''
+      '- Document the Home Assistant services exposed by the integration.'
+      ''
+      '## FAQ'
+      ''
+      '### Comment faire évoluer le README ?'
+      ''
+      'Conserver cette structure et harmoniser les badges, la couleur et le texte.'
     ) | Set-Content -Path $readmePath -Encoding UTF8
   }
 }
