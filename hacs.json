@@ -1,7 +1,0 @@
-{
-  "name": "HomeAssistant AI - Dashboard Cards",
-  "homeassistant": "2024.1.0",
-  "content_in_root": false,
-  "filename": "homeassistant-ai-cards.js",
-  "render_readme": true
-}

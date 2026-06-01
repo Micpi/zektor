@@ -1,4 +1,5 @@
 """The Blaze PowerZone Connect integration."""
+
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
@@ -109,7 +110,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api: BlazeApi = data[DATA_API]
         await api.disconnect()
 
-        if not hass.data[DOMAIN] and hass.services.has_service(DOMAIN, SERVICE_SEND_RAW_COMMAND):
+        if not hass.data[DOMAIN] and hass.services.has_service(
+            DOMAIN, SERVICE_SEND_RAW_COMMAND
+        ):
             hass.services.async_remove(DOMAIN, SERVICE_SEND_RAW_COMMAND)
 
     return unload_ok

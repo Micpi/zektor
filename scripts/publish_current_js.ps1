@@ -29,12 +29,18 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Ensure native command non-zero exit codes don't throw before retry logic handles them.
+if ($null -ne (Get-Variable -Name PSNativeCommandUseErrorActionPreference -Scope Global -ErrorAction SilentlyContinue)) {
+  $Global:PSNativeCommandUseErrorActionPreference = $false
+}
+
 $root = Resolve-Path "$PSScriptRoot\.."
 $customCardsRoot = Join-Path $root "custom_cards"
 $integrationsRoot = Join-Path $root "integrations"
 
 function Write-Info([string]$msg) { Write-Host "[INFO] $msg" -ForegroundColor Blue }
 function Write-OK([string]$msg) { Write-Host "[OK] $msg" -ForegroundColor Green }
+function Write-WarnMsg([string]$msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 function Write-Fail([string]$msg) { Write-Host "[KO] $msg" -ForegroundColor Red }
 
 function Get-PlainTextFromSecureString {
@@ -361,6 +367,23 @@ function Ensure-RemoteOrigin {
   }
 }
 
+function Ensure-PushRemote {
+  param(
+    [string]$CardPath,
+    [string]$Owner,
+    [string]$RepoName
+  )
+
+  # Guarantee that a predictable remote exists for push operations.
+  Ensure-RemoteOrigin -CardPath $CardPath -Owner $Owner -RepoName $RepoName
+  $originUrl = @(& git -C $CardPath remote get-url origin 2>$null)
+  if ($LASTEXITCODE -ne 0 -or -not $originUrl) {
+    throw "Remote 'origin' introuvable et impossible a creer pour $RepoName"
+  }
+
+  return 'origin'
+}
+
 function New-GitHubRepositoryIfMissing {
   param(
     [string]$Owner,
@@ -491,6 +514,49 @@ function Set-RepoNonInteractive {
   & git -C $RepoPath config gc.autoDetach false 2>$null
 }
 
+function Invoke-GitPushWithRetry {
+  param(
+    [string]$RepoPath,
+    [string]$Remote,
+    [string]$RefSpec,
+    [switch]$SetUpstream,
+    [string]$AuthHeader
+  )
+
+  $attempt = 1
+  while ($attempt -le 2) {
+    if ([string]::IsNullOrWhiteSpace($AuthHeader)) {
+      if ($SetUpstream) {
+        & git -C $RepoPath push -u $Remote $RefSpec
+      }
+      else {
+        & git -C $RepoPath push $Remote $RefSpec
+      }
+    }
+    else {
+      if ($SetUpstream) {
+        & git -C $RepoPath -c "http.https://github.com/.extraheader=$AuthHeader" push -u $Remote $RefSpec
+      }
+      else {
+        & git -C $RepoPath -c "http.https://github.com/.extraheader=$AuthHeader" push $Remote $RefSpec
+      }
+    }
+
+    if ($LASTEXITCODE -eq 0) {
+      return
+    }
+
+    if ($attempt -eq 1) {
+      Write-WarnMsg "Push Git echoue (tentative 1). Nouvelle tentative immediate..."
+      & git -C $RepoPath fetch $Remote --prune 2>$null
+    }
+
+    $attempt += 1
+  }
+
+  throw "Push Git echoue apres 2 tentatives (remote=$Remote, ref=$RefSpec)."
+}
+
 function Push-CardRepository {
   param(
     [string]$CardPath,
@@ -504,23 +570,18 @@ function Push-CardRepository {
   New-GitHubRepositoryIfMissing -Owner $Owner -Name $RepoName -Token $Token
   Set-RepoNonInteractive -RepoPath $CardPath
 
-  $authUrl = "https://${Owner}:${Token}@github.com/$Owner/$RepoName.git"
-  $cleanUrl = "https://github.com/$Owner/$RepoName.git"
-  & git -C $CardPath remote set-url origin $authUrl | Out-Null
+  $pushRemote = Ensure-PushRemote -CardPath $CardPath -Owner $Owner -RepoName $RepoName
 
-  try {
-    & git -C $CardPath push -u origin main
-    if ($LASTEXITCODE -ne 0) { throw "Push main echoue pour $RepoName" }
-    Write-OK "Push main OK"
+  $tokenSafe = $Token.Trim()
+  $basicAuth = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("${Owner}:${tokenSafe}"))
+  $authHeader = "AUTHORIZATION: basic $basicAuth"
 
-    if ($ShouldPushTag) {
-      & git -C $CardPath push origin "v$Version"
-      if ($LASTEXITCODE -ne 0) { throw "Push tag echoue pour $RepoName" }
-      Write-OK "Push tag v$Version OK"
-    }
-  }
-  finally {
-    & git -C $CardPath remote set-url origin $cleanUrl | Out-Null
+  Invoke-GitPushWithRetry -RepoPath $CardPath -Remote $pushRemote -RefSpec 'main' -SetUpstream -AuthHeader $authHeader
+  Write-OK "Push main OK"
+
+  if ($ShouldPushTag) {
+    Invoke-GitPushWithRetry -RepoPath $CardPath -Remote $pushRemote -RefSpec "v$Version" -AuthHeader $authHeader
+    Write-OK "Push tag v$Version OK"
   }
 }
 
@@ -534,14 +595,13 @@ function Push-CardRepositoryWithExistingCredentials {
   )
 
   Set-RepoNonInteractive -RepoPath $CardPath
+  $pushRemote = Ensure-PushRemote -CardPath $CardPath -Owner $Owner -RepoName $RepoName
 
-  & git -C $CardPath push -u origin main
-  if ($LASTEXITCODE -ne 0) { throw "Push main echoue pour $RepoName (aucun token fourni)." }
+  Invoke-GitPushWithRetry -RepoPath $CardPath -Remote $pushRemote -RefSpec 'main' -SetUpstream
   Write-OK "Push main OK"
 
   if ($ShouldPushTag) {
-    & git -C $CardPath push origin "v$Version"
-    if ($LASTEXITCODE -ne 0) { throw "Push tag echoue pour $RepoName (aucun token fourni)." }
+    Invoke-GitPushWithRetry -RepoPath $CardPath -Remote $pushRemote -RefSpec "v$Version"
     Write-OK "Push tag v$Version OK"
   }
 }
@@ -629,6 +689,13 @@ else {
   $Message
 }
 
+if (-not $NoTag -and -not [string]::IsNullOrWhiteSpace($version)) {
+  $versionSuffix = "v$version"
+  if ($commitMessage -notlike "*$versionSuffix*") {
+    $commitMessage = "$commitMessage $versionSuffix"
+  }
+}
+
 Write-Info "Publication Git de la carte: $repoName"
 
 $reportVersion = if ([string]::IsNullOrWhiteSpace($version)) { 'no-tag' } else { $version }
@@ -696,12 +763,12 @@ else {
       Write-Fail ($_.Exception.Message + ' Si le repo GitHub doit etre cree ou si vos credentials Git ne sont pas configures, relancez avec -GitHubToken ou GITHUB_TOKEN.')
     }
     else {
-      Write-Fail $_.Exception.Message
+      Write-Fail ($_.Exception.Message + ' Verifiez aussi le remote Git et les droits GitHub sur ' + $GitHubUsername + '/' + $repoName + '.')
     }
     exit 1
   }
 
-  if (-not $NoTag -and $version) {
+  if (-not $NoTag -and $version -and $createdTag) {
     try {
       Write-Info "Etape finale: creation du release GitHub..."
       if ($GitHubToken) {
@@ -721,6 +788,9 @@ else {
       Write-Fail ("Creation release echouee pour v" + $version + ": " + $_.Exception.Message)
       exit 1
     }
+  }
+  elseif (-not $NoTag -and $version -and -not $createdTag) {
+    Write-Info 'Aucun nouveau tag cree dans cette execution: creation release ignoree.'
   }
 }
 

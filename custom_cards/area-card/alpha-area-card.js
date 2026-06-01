@@ -254,6 +254,15 @@ class AlphaAreaCard extends HTMLElement {
     return deepClone(DEFAULT_CONFIG)
   }
 
+  static getGridOptions() {
+    return {
+      columns: 12,
+      min_columns: 6,
+      rows: 3,
+      min_rows: 3,
+    }
+  }
+
   static get observedAttributes() {
     return []
   }

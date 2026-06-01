@@ -1036,6 +1036,15 @@ class NaiveFlexCard extends LitElement {
     }
   }
 
+  static getGridOptions() {
+    return {
+      columns: 12,
+      min_columns: 6,
+      rows: 3,
+      min_rows: 3,
+    }
+  }
+
   static get styles() {
     return css`
       :host {

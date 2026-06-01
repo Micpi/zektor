@@ -1,0 +1,11 @@
+{
+  "name": "pure-thermostat-card",
+  "version": "0.2.9",
+  "private": true,
+  "description": "Minimal circular Home Assistant thermostat card with visual editor",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('pure-thermostat-card.js','dist/pure-thermostat-card.js');console.log('dist/pure-thermostat-card.js generated');\"",
+    "watch": "node -e \"console.log('Watch mode: use your editor watcher tooling for this card.');\""
+  },
+  "license": "MIT"
+}

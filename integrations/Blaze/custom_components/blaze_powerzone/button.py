@@ -1,4 +1,5 @@
 """Button entities for Blaze PowerZone Connect."""
+
 # pylint: disable=abstract-method,too-many-positional-arguments,duplicate-code
 from __future__ import annotations
 

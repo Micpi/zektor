@@ -1,6 +1,7 @@
 {
-    "name": "iOS Popup",
-    "content_in_root": false,
-    "filename": "ios-popup-card.js",
-    "render_readme": true
+  "name": "iOS Popup",
+  "content_in_root": false,
+  "filename": "ios-popup-card.js",
+  "render_readme": true,
+  "version": "3.0.0"
 }

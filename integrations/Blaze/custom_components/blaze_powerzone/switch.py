@@ -1,4 +1,5 @@
 """Switch entities for Blaze PowerZone Connect."""
+
 # pylint: disable=unexpected-keyword-arg,abstract-method,duplicate-code
 from __future__ import annotations
 
@@ -112,33 +113,35 @@ async def async_setup_entry(
 
     # Zone switches
     for zid in coordinator.get_zone_ids():
-        entities.extend([
-            # Zone Mute
-            BlazeSwitchEntity(
-                coordinator,
-                BlazeSwitchDescription(
-                    key=f"zone_{zid}_mute",
-                    name=f"Zone {zid} Mute",
-                    register=f"ZONE-{zid}.MUTE",
-                    icon="mdi:volume-off",
+        entities.extend(
+            [
+                # Zone Mute
+                BlazeSwitchEntity(
+                    coordinator,
+                    BlazeSwitchDescription(
+                        key=f"zone_{zid}_mute",
+                        name=f"Zone {zid} Mute",
+                        register=f"ZONE-{zid}.MUTE",
+                        icon="mdi:volume-off",
+                    ),
+                    device_name,
+                    entry.entry_id,
                 ),
-                device_name,
-                entry.entry_id,
-            ),
-            # Zone Mute Enable
-            BlazeSwitchEntity(
-                coordinator,
-                BlazeSwitchDescription(
-                    key=f"zone_{zid}_mute_enable",
-                    name=f"Zone {zid} Mute Enable",
-                    register=f"ZONE-{zid}.MUTE_ENABLE",
-                    icon="mdi:volume-off",
+                # Zone Mute Enable
+                BlazeSwitchEntity(
+                    coordinator,
+                    BlazeSwitchDescription(
+                        key=f"zone_{zid}_mute_enable",
+                        name=f"Zone {zid} Mute Enable",
+                        register=f"ZONE-{zid}.MUTE_ENABLE",
+                        icon="mdi:volume-off",
+                    ),
+                    device_name,
+                    entry.entry_id,
                 ),
-                device_name,
-                entry.entry_id,
-            ),
-            # Zone Stereo (only primary zones A, C, E, G)
-        ])
+                # Zone Stereo (only primary zones A, C, E, G)
+            ]
+        )
 
         if zid in ("A", "C", "E", "G"):
             entities.append(
@@ -217,58 +220,62 @@ async def async_setup_entry(
 
     # Output switches
     for oid in coordinator.get_output_ids():
-        entities.extend([
-            # Output Mute
-            BlazeSwitchEntity(
-                coordinator,
-                BlazeSwitchDescription(
-                    key=f"out_{oid}_mute",
-                    name=f"Output {oid} Mute",
-                    register=f"OUT-{oid}.MUTE",
-                    icon="mdi:volume-off",
+        entities.extend(
+            [
+                # Output Mute
+                BlazeSwitchEntity(
+                    coordinator,
+                    BlazeSwitchDescription(
+                        key=f"out_{oid}_mute",
+                        name=f"Output {oid} Mute",
+                        register=f"OUT-{oid}.MUTE",
+                        icon="mdi:volume-off",
+                    ),
+                    device_name,
+                    entry.entry_id,
                 ),
-                device_name,
-                entry.entry_id,
-            ),
-            # Output Delay Bypass
-            BlazeSwitchEntity(
-                coordinator,
-                BlazeSwitchDescription(
-                    key=f"out_{oid}_delay_bypass",
-                    name=f"Output {oid} Delay Bypass",
-                    register=f"OUT-{oid}.DELAY.BYPASS",
-                    icon="mdi:fast-forward",
+                # Output Delay Bypass
+                BlazeSwitchEntity(
+                    coordinator,
+                    BlazeSwitchDescription(
+                        key=f"out_{oid}_delay_bypass",
+                        name=f"Output {oid} Delay Bypass",
+                        register=f"OUT-{oid}.DELAY.BYPASS",
+                        icon="mdi:fast-forward",
+                    ),
+                    device_name,
+                    entry.entry_id,
                 ),
-                device_name,
-                entry.entry_id,
-            ),
-        ])
+            ]
+        )
 
     # Generator switches
-    entities.extend([
-        BlazeSwitchEntity(
-            coordinator,
-            BlazeSwitchDescription(
-                key="gen_pink_lpf_enable",
-                name="Generator Pink LPF Enable",
-                register="GENERATOR.PINK.LPF_ENABLE",
-                icon="mdi:filter",
+    entities.extend(
+        [
+            BlazeSwitchEntity(
+                coordinator,
+                BlazeSwitchDescription(
+                    key="gen_pink_lpf_enable",
+                    name="Generator Pink LPF Enable",
+                    register="GENERATOR.PINK.LPF_ENABLE",
+                    icon="mdi:filter",
+                ),
+                device_name,
+                entry.entry_id,
             ),
-            device_name,
-            entry.entry_id,
-        ),
-        BlazeSwitchEntity(
-            coordinator,
-            BlazeSwitchDescription(
-                key="gen_pink_hpf_enable",
-                name="Generator Pink HPF Enable",
-                register="GENERATOR.PINK.HPF_ENABLE",
-                icon="mdi:filter",
+            BlazeSwitchEntity(
+                coordinator,
+                BlazeSwitchDescription(
+                    key="gen_pink_hpf_enable",
+                    name="Generator Pink HPF Enable",
+                    register="GENERATOR.PINK.HPF_ENABLE",
+                    icon="mdi:filter",
+                ),
+                device_name,
+                entry.entry_id,
             ),
-            device_name,
-            entry.entry_id,
-        ),
-    ])
+        ]
+    )
 
     # System locating
     entities.append(

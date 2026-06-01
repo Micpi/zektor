@@ -1,4 +1,5 @@
 """Config flow for Blaze PowerZone Connect integration."""
+
 from __future__ import annotations
 
 import logging
@@ -40,14 +41,11 @@ class BlazeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Return True if another flow matches this device."""
         if not hasattr(other_flow, "_discovered_host"):
             return False
-        return (
-            self._discovered_host == getattr(other_flow, "_discovered_host", None)
-            and self._discovered_port == getattr(other_flow, "_discovered_port", None)
-        )
+        return self._discovered_host == getattr(
+            other_flow, "_discovered_host", None
+        ) and self._discovered_port == getattr(other_flow, "_discovered_port", None)
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
         """Handle initial step - manual configuration."""
         errors: dict[str, str] = {}
 
@@ -101,13 +99,13 @@ class BlazeConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_zeroconf(
-        self, discovery_info: Any
-    ) -> Any:
+    async def async_step_zeroconf(self, discovery_info: Any) -> Any:
         """Handle zeroconf discovery."""
         host = str(discovery_info.host)
         port = discovery_info.port or DEFAULT_PORT
-        name = discovery_info.name.split(".")[0] if discovery_info.name else DEFAULT_NAME
+        name = (
+            discovery_info.name.split(".")[0] if discovery_info.name else DEFAULT_NAME
+        )
 
         # Get properties from mDNS
         properties = discovery_info.properties or {}
@@ -194,9 +192,7 @@ class BlazeOptionsFlow(OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

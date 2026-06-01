@@ -619,7 +619,30 @@ if ($manifest.domain) {
 $displayName = if ($manifest.name) { [string]$manifest.name } else { Convert-ToDisplayName -Domain $domain }
 $repoName = $domain.Replace('_', '-')
 $currentVersion = [string]$manifest.version
-$version = if ($NoTag) { $null } else { Get-NextVersion -RepoPath $integrationPath -CurrentVersion $currentVersion }
+$version = $null
+$reuseExistingHeadTag = $false
+
+$initialChanges = @(& git -C $integrationPath status --porcelain)
+
+if (-not $NoTag) {
+  # Resume incomplete publications: if current manifest version already has a local tag on HEAD,
+  # reuse that version instead of incrementing again.
+  $headCommit = (& git -C $integrationPath rev-parse HEAD 2>$null).Trim()
+  $currentTag = if ([string]::IsNullOrWhiteSpace($currentVersion)) { $null } else { "v$currentVersion" }
+  $tagCommit = $null
+  if ($currentTag) {
+    $tagCommit = (& git -C $integrationPath rev-parse "refs/tags/$currentTag^{commit}" 2>$null).Trim()
+  }
+
+  if ($initialChanges.Count -eq 0 -and $currentTag -and $LASTEXITCODE -eq 0 -and $tagCommit) {
+    $version = $currentVersion
+    $reuseExistingHeadTag = $true
+    Write-Info "Resuming publication from existing local tag $currentTag."
+  }
+  else {
+    $version = Get-NextVersion -RepoPath $integrationPath -CurrentVersion $currentVersion
+  }
+}
 
 Write-Info "Integration detected: $integrationFolder (domain=$domain, repo=$repoName)"
 
@@ -637,8 +660,20 @@ else {
   $Message
 }
 
+if (-not $NoTag -and -not [string]::IsNullOrWhiteSpace($version)) {
+  $versionSuffix = "v$version"
+  if ($commitMessage -notlike "*$versionSuffix*") {
+    $commitMessage = "$commitMessage $versionSuffix"
+  }
+}
+
 $reportVersion = if ([string]::IsNullOrWhiteSpace($version)) { 'no-tag' } else { $version }
-Write-PublishNotes -RepoPath $integrationPath -Version $reportVersion -CommitMessage $commitMessage
+if ($reuseExistingHeadTag) {
+  Write-Info 'Resume mode: skipping publish notes/changelog update to avoid creating a new commit.'
+}
+else {
+  Write-PublishNotes -RepoPath $integrationPath -Version $reportVersion -CommitMessage $commitMessage
+}
 
 & git -C $integrationPath add .
 if ($LASTEXITCODE -ne 0) {
@@ -658,17 +693,30 @@ if ($hasChanges.Count -gt 0) {
   Write-OK 'Commit created'
 
   if (-not $NoTag -and $version) {
-    & git -C $integrationPath tag "v$version"
-    if ($LASTEXITCODE -ne 0) {
-      Write-Fail "Tag creation failed: v$version"
-      exit $LASTEXITCODE
+    if ($reuseExistingHeadTag) {
+      $createdTag = $true
+      Write-Info "Using existing local tag: v$version"
     }
-    $createdTag = $true
-    Write-OK "Tag created: v$version"
+    else {
+      & git -C $integrationPath tag "v$version"
+      if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Tag creation failed: v$version"
+        exit $LASTEXITCODE
+      }
+      $createdTag = $true
+      Write-OK "Tag created: v$version"
+    }
   }
 }
 else {
   Write-Info 'No local changes to commit for this integration.'
+  if (-not $NoTag -and $version) {
+    $existingTagCommit = (& git -C $integrationPath rev-parse "refs/tags/v$version^{commit}" 2>$null).Trim()
+    if ($LASTEXITCODE -eq 0 -and $existingTagCommit) {
+      $createdTag = $true
+      Write-Info "Found existing local tag to publish: v$version"
+    }
+  }
 }
 
 if ($NoPush) {

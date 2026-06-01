@@ -1,4 +1,5 @@
 """API client for Blaze PowerZone Connect amplifiers."""
+
 # pylint: disable=too-many-public-methods
 from __future__ import annotations
 

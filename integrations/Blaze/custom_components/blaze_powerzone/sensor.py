@@ -1,4 +1,5 @@
 """Sensor entities for Blaze PowerZone Connect."""
+
 # pylint: disable=unexpected-keyword-arg,duplicate-code
 from __future__ import annotations
 

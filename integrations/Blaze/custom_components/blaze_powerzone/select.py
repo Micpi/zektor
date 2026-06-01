@@ -1,4 +1,5 @@
 """Select entities for Blaze PowerZone Connect."""
+
 # pylint: disable=unexpected-keyword-arg,abstract-method,too-many-locals,line-too-long,consider-using-in,duplicate-code
 from __future__ import annotations
 
@@ -135,7 +136,13 @@ async def async_setup_entry(
         )
 
         # Zone GPIO Volume Control
-        vc_options = ["OFF (0)", "GPIO PIN 4 (1)", "GPIO PIN 5 (2)", "GPIO PIN 6 (3)", "GPIO PIN 7 (4)"]
+        vc_options = [
+            "OFF (0)",
+            "GPIO PIN 4 (1)",
+            "GPIO PIN 5 (2)",
+            "GPIO PIN 6 (3)",
+            "GPIO PIN 7 (4)",
+        ]
         vc_value_map = {
             "OFF (0)": "0",
             "GPIO PIN 4 (1)": "1",

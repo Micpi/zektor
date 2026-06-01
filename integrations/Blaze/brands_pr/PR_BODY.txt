@@ -1,0 +1,17 @@
+Title: Add brand assets for blaze_powerzone custom integration
+
+## Summary
+This PR adds brand assets for the custom integration domain `blaze_powerzone`.
+
+## Added files
+- `custom_integrations/blaze_powerzone/icon.png`
+- `custom_integrations/blaze_powerzone/icon@2x.png`
+- `custom_integrations/blaze_powerzone/logo.png`
+
+## Notes
+- Images are PNG format.
+- `icon.png` is square 256x256.
+- `icon@2x.png` is 512x512 for hDPI.
+- Logo is included for better brand rendering.
+
+Thanks for reviewing.

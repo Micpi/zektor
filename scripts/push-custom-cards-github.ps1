@@ -67,6 +67,76 @@ function New-GitHubRepositoryIfMissing {
     Write-Host "[✓] Repo GitHub créé: $Owner/$Name"
 }
 
+function Get-LatestSemverTag {
+    param([string]$CardPath)
+
+    $tags = @(& git -C $CardPath tag --list "v*")
+    if (-not $tags -or $tags.Count -eq 0) {
+        return $null
+    }
+
+    $parsedTags = @(
+        foreach ($tag in $tags) {
+            if ($tag -match '^v(\d+)\.(\d+)\.(\d+)$') {
+                [pscustomobject]@{
+                    Tag = $tag
+                    Major = [int]$Matches[1]
+                    Minor = [int]$Matches[2]
+                    Patch = [int]$Matches[3]
+                }
+            }
+        }
+    )
+
+    if (-not $parsedTags -or $parsedTags.Count -eq 0) {
+        return $null
+    }
+
+    return ($parsedTags | Sort-Object Major, Minor, Patch | Select-Object -Last 1).Tag
+}
+
+function Ensure-GitHubReleaseForTag {
+    param(
+        [string]$Owner,
+        [string]$RepoName,
+        [string]$Tag,
+        [string]$Token
+    )
+
+    if (-not $Tag) {
+        return
+    }
+
+    $headers = @{
+        Authorization = "Bearer $Token"
+        Accept = "application/vnd.github+json"
+        "X-GitHub-Api-Version" = "2022-11-28"
+    }
+
+    try {
+        Invoke-RestMethod -Uri "https://api.github.com/repos/$Owner/$RepoName/releases/tags/$Tag" -Headers $headers -Method Get | Out-Null
+        Write-Host "[i] Release deja existante: $Tag"
+        return
+    } catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -ne 404) {
+            throw
+        }
+    }
+
+    $body = @{
+        tag_name = $Tag
+        name = $Tag
+        target_commitish = "main"
+        draft = $false
+        prerelease = $false
+        generate_release_notes = $true
+    } | ConvertTo-Json
+
+    Invoke-RestMethod -Uri "https://api.github.com/repos/$Owner/$RepoName/releases" -Headers $headers -Method Post -Body $body | Out-Null
+    Write-Host "[✓] Release créée: $Tag"
+}
+
 # Demander le token s'il n'est pas fourni
 if (-not $GitHubToken) {
     Write-Host "`n🔐 GitHub Token requis pour l'authentification`n"
@@ -138,10 +208,18 @@ foreach ($cardName in $cardDirs.Keys) {
         & git -C $cardPath -c "http.https://github.com/.extraheader=$authHeader" push -u origin main 2>&1 | Select-String -Pattern "(master|main|Branch|done|remote|new branch)"
         Write-Host "[✓] Main poussé"
         
-        # Push tag
-        Write-Host "[↑] Push tag v0.1.0..."
-        & git -C $cardPath -c "http.https://github.com/.extraheader=$authHeader" push origin v0.1.0 2>&1 | Select-String -Pattern "(new tag|tag|done)"
-        Write-Host "[✓] Tag poussé"
+        # Push all tags
+        Write-Host "[↑] Push tags..."
+        & git -C $cardPath -c "http.https://github.com/.extraheader=$authHeader" push --tags 2>&1 | Select-String -Pattern "(new tag|tag|done|Everything up-to-date)"
+        Write-Host "[✓] Tags poussés"
+
+        # Ensure release on latest semver tag
+        $latestTag = Get-LatestSemverTag -CardPath $cardPath
+        if ($latestTag) {
+            Ensure-GitHubReleaseForTag -Owner $GitHubUsername -RepoName $repoName -Tag $latestTag -Token $GitHubToken
+        } else {
+            Write-Host "[i] Aucun tag semver trouvé pour $repoName"
+        }
         
         $successCards += $repoName
         

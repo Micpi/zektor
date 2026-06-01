@@ -1,0 +1,11 @@
+{
+  "name": "ios-popup-card",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Home Assistant custom card for iOS-style popup bottom sheets",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('ios-popup-card.js','dist/ios-popup-card.js');console.log('dist/ios-popup-card.js generated');\"",
+    "watch": "node -e \"console.log('Watch mode: use your editor/terminal watcher tooling for this card.');\""
+  },
+  "license": "MIT"
+}

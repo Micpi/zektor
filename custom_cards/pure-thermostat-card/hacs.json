@@ -1,0 +1,8 @@
+{
+  "name": "Pure Thermostat Card",
+  "content_in_root": false,
+  "filename": "pure-thermostat-card.js",
+  "render_readme": true,
+  "homeassistant": "2024.1.0",
+  "version": "0.2.9"
+}

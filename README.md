@@ -33,8 +33,22 @@ npm install
 | `scripts/build_card.ps1 -CardName <nom>` | Build une custom card |
 | `scripts/auto_commit.ps1` | Auto commit/push scope HA (`custom_cards/`, `integrations/`) + version/tag auto |
 | `scripts/publish_current_js.ps1 -CurrentFile <fichier>` | One-click publish: build carte du fichier actif + commit/version/tag/push |
+| `scripts/publish_all_drivers.ps1` | Publication globale de tous les drivers (cards + integrations): commit versionne + tag + release |
+| `scripts/check_ha_api_updates.ps1` | Veille API Home Assistant (Core, Frontend, blog dev) |
+| `scripts/generate_workspace_catalog.ps1` | Genere `README_WORKSPACE_CATALOG.md` (cartes/integrations + versions) |
 
 Guide complet des commandes: [docs/commandes.md](docs/commandes.md)
+
+## Catalogue du workspace
+
+- Inventaire des cartes et integrations: [README_WORKSPACE_CATALOG.md](README_WORKSPACE_CATALOG.md)
+- Regeneration automatique: `pwsh -File scripts/generate_workspace_catalog.ps1`
+
+## Mode Autopilote
+
+- Playbook trie pour generation en chaine: [docs/AUTOPILOT_HA_FACTORY.md](docs/AUTOPILOT_HA_FACTORY.md)
+- Veille API obligatoire avant nouvelle serie de dev: `pwsh -File scripts/check_ha_api_updates.ps1`
+- Rapport de veille courant: `knowledge/ha_api_notes/latest_watch.md`
 
 ### Versionning et release automatiques
 
@@ -58,6 +72,27 @@ pwsh -File scripts/auto_commit.ps1 -NoPush
 ```
 
 - Le workflow GitHub `.github/workflows/auto-release-hacs.yml` cree automatiquement une release a chaque push sur `main` contenant des changements dans `custom_cards/` ou `integrations/`.
+
+### Publication HACS globale (existants + futurs drivers)
+
+- Le script `scripts/publish_all_drivers.ps1` detecte automatiquement tous les drivers.
+- Detection cartes: `custom_cards/`
+- Detection integrations: `integrations/`
+- Chaque driver est publie avec commit versionne (message incluant `vX.Y.Z`), tag Git `vX.Y.Z` et release GitHub automatique.
+- Les futurs drivers sont pris en charge automatiquement sans liste statique.
+
+Exemples:
+
+```powershell
+# Publication complete de tous les drivers
+pwsh -File scripts/publish_all_drivers.ps1 -GitHubUsername Micpi
+
+# Publication globale en local seulement (sans push)
+pwsh -File scripts/publish_all_drivers.ps1 -NoPush
+
+# Continuer meme si un driver echoue
+pwsh -File scripts/publish_all_drivers.ps1 -ContinueOnError
+```
 
 ## Tâches VS Code
 

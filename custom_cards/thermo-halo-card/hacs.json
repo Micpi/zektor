@@ -2,5 +2,6 @@
   "name": "Thermo Halo Card",
   "content_in_root": false,
   "filename": "thermo-halo-card.js",
-  "render_readme": true
+  "render_readme": true,
+  "version": "0.1.0"
 }

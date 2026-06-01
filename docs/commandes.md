@@ -204,7 +204,8 @@ Remarques:
 - Chaine executee:
   - Detection de la carte via le chemin sous `custom_cards/<nom_carte>/...`
   - Build via `scripts/build_card.ps1`
-  - Publication Git via `scripts/auto_commit.ps1`
+  - Commit/version/tag/push/release au niveau du repo driver de la carte
+  - Le message de commit inclut automatiquement la version `vX.Y.Z`
 
 Commande:
 
@@ -229,6 +230,89 @@ Codes retour:
 
 - `0`: publication OK.
 - `!= 0`: echec detection carte, build ou publication Git.
+
+---
+
+### 1.6 Veille API Home Assistant
+
+- Script: `scripts/check_ha_api_updates.ps1`
+- But: surveiller les evolutions officielles (Core, Frontend, blog dev) impactant
+  integrations et custom cards.
+- Comportement:
+  - Recupere la derniere version Core et Frontend depuis GitHub.
+  - Extrait les billets dev pertinents (deprecation, API, config flow, frontend, cards).
+  - Ecrit un snapshot dans `logs/ha_api_watch_state.json`.
+  - Ecrit un rapport exploitable dans `knowledge/ha_api_notes/latest_watch.md`.
+
+Commande:
+
+```powershell
+pwsh -File scripts/check_ha_api_updates.ps1
+```
+
+Option de garde stricte (retour != 0 si changement):
+
+```powershell
+pwsh -File scripts/check_ha_api_updates.ps1 -FailOnChange
+```
+
+---
+
+### 1.7 Generer le catalogue cartes/integrations
+
+---
+
+### 1.8 Publication globale de tous les drivers (cards + integrations)
+
+- Script: `scripts/publish_all_drivers.ps1`
+- But: publier en une seule commande tous les drivers existants et futurs detectes automatiquement dans:
+  - `custom_cards/`
+  - `integrations/`
+- Pour chaque driver, le flux applique:
+  - commit avec numero de version (`vX.Y.Z`) dans le message
+  - creation du tag Git `vX.Y.Z`
+  - creation de la release GitHub (notes auto)
+
+Commande standard:
+
+```powershell
+pwsh -File scripts/publish_all_drivers.ps1 -GitHubUsername Micpi
+```
+
+Sans push (local uniquement):
+
+```powershell
+pwsh -File scripts/publish_all_drivers.ps1 -NoPush
+```
+
+Continuer meme en cas d'erreur d'un driver:
+
+```powershell
+pwsh -File scripts/publish_all_drivers.ps1 -ContinueOnError
+```
+
+Parametres utiles:
+
+- `-GitHubUsername` (string): proprietaire GitHub cible.
+- `-GitHubToken` (string, optionnel): token GitHub; sinon fallback `GITHUB_TOKEN` / `gh auth token`.
+- `-MessagePrefix` (string, optionnel): prefixe de commit applique a chaque driver.
+- `-OnlyCards` / `-OnlyIntegrations`: limiter le scope de publication.
+- `-NoPush`: commit/tag local seulement.
+- `-NoTag`: commit/push sans tag/release.
+- `-ContinueOnError`: n'arrete pas la boucle sur le premier echec.
+
+- Script: `scripts/generate_workspace_catalog.ps1`
+- But: generer `README_WORKSPACE_CATALOG.md` avec versions et statut d alignement.
+- Comportement:
+  - Cartes: compare `hacs.json` et `package.json`.
+  - Integrations: compare `manifest.json` et `hacs.json`.
+  - Signale les ecarts en `MISMATCH`.
+
+Commande:
+
+```powershell
+pwsh -File scripts/generate_workspace_catalog.ps1
+```
 
 ---
 
@@ -292,6 +376,22 @@ Tache composee (sequence):
 2. HA: Verifier la config YAML
 3. HA: Tests integration (pytest)
 
+### 2.8 HA: Veille API Home Assistant
+
+Commande executee:
+
+```powershell
+pwsh -File ${workspaceFolder}/scripts/check_ha_api_updates.ps1
+```
+
+### 2.9 HA: Generer catalogue workspace
+
+Commande executee:
+
+```powershell
+pwsh -File ${workspaceFolder}/scripts/generate_workspace_catalog.ps1
+```
+
 ---
 
 ## 3) Workflow GitHub Release HACS
@@ -344,4 +444,16 @@ Mode auto continu:
 
 ```powershell
 pwsh -File scripts/auto_commit.ps1 -Watch -IntervalSeconds 10
+```
+
+Veille API:
+
+```powershell
+pwsh -File scripts/check_ha_api_updates.ps1
+```
+
+Regenerer le catalogue:
+
+```powershell
+pwsh -File scripts/generate_workspace_catalog.ps1
 ```

@@ -1,0 +1,11 @@
+{
+  "name": "activity-select-card",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Home Assistant custom card with configurable round activity buttons",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('activity-select-card.js','dist/activity-select-card.js');console.log('dist/activity-select-card.js generated');\"",
+    "watch": "node -e \"console.log('Watch mode: use your editor/terminal watcher tooling for this card.');\""
+  },
+  "license": "MIT"
+}

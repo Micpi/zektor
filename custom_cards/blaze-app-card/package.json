@@ -1,0 +1,11 @@
+{
+  "name": "blaze-app-card",
+  "version": "0.2.6",
+  "private": true,
+  "description": "Structured Home Assistant control center for Blaze PowerZone integration",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('blaze-app-card.js','dist/blaze-app-card.js');console.log('dist/blaze-app-card.js generated');\"",
+    "watch": "node -e \"console.log('Watch mode: use your editor/terminal watcher tooling for this card.');\""
+  },
+  "license": "MIT"
+}
