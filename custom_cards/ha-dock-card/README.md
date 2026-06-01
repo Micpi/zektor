@@ -1,12 +1,17 @@
-# HA Dock Card
+<div align="center">
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
-[![Version](https://img.shields.io/badge/Version-v0.1.1-0EA5E9?style=for-the-badge)](https://github.com/Micpi/ha-dock-card)
-[![Type](https://img.shields.io/badge/Type-Navigation%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/ha-dock-card)
+# 🧩 HA Dock Card — Home Assistant Card
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz)
+[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/Micpi/ha-dock-card?style=for-the-badge&label=Version)](https://github.com/Micpi/ha-dock-card/releases/latest)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
 
-HA Dock Card provides an iOS-style floating dock for Lovelace navigation, with glass blur, active state highlighting and a visual editor for layout tuning.
+**Carte de navigation Lovelace inspirée d'un dock iOS flottant pour Home Assistant.**  
+Déployez une navigation visuelle moderne avec état actif, blur et configuration assistée.
+
+</div>
 
 ---
 

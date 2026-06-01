@@ -1,12 +1,17 @@
-# Light Slider Card
+<div align="center">
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
-[![Version](https://img.shields.io/badge/Version-v1.2.1-0EA5E9?style=for-the-badge)](https://github.com/Micpi/light-slider-card)
-[![Type](https://img.shields.io/badge/Type-Lighting%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/light-slider-card)
+# 💡 Light Slider Card — Home Assistant Card
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz)
+[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/Micpi/light-slider-card?style=for-the-badge&label=Version)](https://github.com/Micpi/light-slider-card/releases/latest)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
 
-Carte Lovelace personnalisée pour Home Assistant — contrôle de lumière avec bargraphe + bouton power.
+**Carte Lovelace dédiée au contrôle rapide des lumières dans Home Assistant.**  
+Ajustez l'intensité et l'état de vos luminaires avec un rendu compact et lisible.
+
+</div>
 
 ---
 

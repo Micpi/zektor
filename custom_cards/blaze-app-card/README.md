@@ -1,12 +1,17 @@
-# Blaze App Card
+<div align="center">
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
-[![Version](https://img.shields.io/badge/Version-v0.2.6-0EA5E9?style=for-the-badge)](https://github.com/Micpi/blaze-app-card)
-[![Type](https://img.shields.io/badge/Type-Professional%20Control%20Panel-0284C7?style=for-the-badge)](https://github.com/Micpi/blaze-app-card)
+# 🔥 Blaze App Card — Home Assistant Card
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz)
+[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/Micpi/blaze-app-card?style=for-the-badge&label=Version)](https://github.com/Micpi/blaze-app-card/releases/latest)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
 
-Carte Lovelace orientee exploitation professionnelle pour l'integration Blaze PowerZone: pilotage rapide, controle fin, DSP, supervision signal et commandes API dans une seule interface.
+**Carte Lovelace professionnelle pour piloter l'écosystème Blaze dans Home Assistant.**  
+Centralisez contrôle rapide, DSP, supervision signal et actions API dans une interface unifiée.
+
+</div>
 
 ---
 

@@ -1,12 +1,17 @@
-# Thermo Halo Card
+<div align="center">
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
-[![Version](https://img.shields.io/badge/Version-v0.1.0-0EA5E9?style=for-the-badge)](https://github.com/Micpi/thermo-halo-card)
-[![Type](https://img.shields.io/badge/Type-Climate%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/thermo-halo-card)
+# 🌡️ Thermo Halo Card — Home Assistant Card
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz)
+[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/Micpi/thermo-halo-card?style=for-the-badge&label=Version)](https://github.com/Micpi/thermo-halo-card/releases/latest)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
 
-Carte Lovelace compacte pour thermostat Home Assistant avec halo thermique dynamique, centrée sur la lisibilité de la température actuelle et de la consigne.
+**Carte thermostat compacte pour Home Assistant avec halo thermique dynamique.**  
+Mettez en avant température actuelle et consigne avec une lecture claire et une interaction rapide.
+
+</div>
 
 ---
 

@@ -1,12 +1,17 @@
-# Alpha Area Card
+<div align="center">
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom%20Card-41BDF5?style=for-the-badge)](https://hacs.xyz)
-[![Version](https://img.shields.io/badge/Version-v1.0.1-0EA5E9?style=for-the-badge)](https://github.com/Micpi/area-card)
-[![Type](https://img.shields.io/badge/Type-Area%20Card-0284C7?style=for-the-badge)](https://github.com/Micpi/area-card)
+# 🧭 Alpha Area Card — Home Assistant Card
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz)
+[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/Micpi/area-card?style=for-the-badge&label=Version)](https://github.com/Micpi/area-card/releases/latest)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
 
-Alpha Area Card affiche une zone Home Assistant avec image, etat synthetique et actions rapides, avec un editeur graphique integre et un rendu optimise pour les dashboards mobiles comme desktop.
+**Carte Lovelace pour afficher une zone Home Assistant avec état synthétique et actions rapides.**  
+Combinez image, capteurs et commandes dans un composant lisible, mobile-first et simple à configurer.
+
+</div>
 
 ---
 
