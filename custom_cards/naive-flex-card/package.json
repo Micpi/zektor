@@ -1,6 +1,6 @@
 {
   "name": "naive-flex-card",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "private": true,
   "description": "Universal Home Assistant card with configurable controls and horizontal scroll action row",
   "scripts": {

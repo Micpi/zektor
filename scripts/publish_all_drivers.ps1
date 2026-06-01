@@ -47,6 +47,48 @@ function Write-OK([string]$Message) { Write-Host "[OK] $Message" -ForegroundColo
 function Write-WarnMsg([string]$Message) { Write-Host "[WARN] $Message" -ForegroundColor Yellow }
 function Write-Fail([string]$Message) { Write-Host "[KO] $Message" -ForegroundColor Red }
 
+function Invoke-PublishScript {
+  param(
+    [string]$ScriptPath,
+    [string]$CurrentFile,
+    [string]$GitHubUsername,
+    [string]$GitHubToken,
+    [string]$Message,
+    [switch]$NoPush,
+    [switch]$NoTag
+  )
+
+  $arguments = @(
+    '-NoProfile'
+    '-ExecutionPolicy'
+    'Bypass'
+    '-File'
+    $ScriptPath
+    '-CurrentFile'
+    $CurrentFile
+    '-GitHubUsername'
+    $GitHubUsername
+  )
+
+  if (-not [string]::IsNullOrWhiteSpace($GitHubToken)) {
+    $arguments += @('-GitHubToken', $GitHubToken)
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($Message)) {
+    $arguments += @('-Message', $Message)
+  }
+
+  if ($NoPush) {
+    $arguments += '-NoPush'
+  }
+
+  if ($NoTag) {
+    $arguments += '-NoTag'
+  }
+
+  & pwsh @arguments
+}
+
 if ($OnlyCards -and $OnlyIntegrations) {
   Write-Fail "OnlyCards et OnlyIntegrations ne peuvent pas etre utilises ensemble."
   exit 1
@@ -178,20 +220,22 @@ foreach ($driver in $drivers) {
 
   try {
     if ($driver.Kind -eq "card") {
-      & pwsh -NoProfile -ExecutionPolicy Bypass -File $publishCardScript `
+      Invoke-PublishScript `
+        -ScriptPath $publishCardScript `
         -CurrentFile $driver.AnchorFile `
-        -Message $msg `
         -GitHubUsername $GitHubUsername `
         -GitHubToken $GitHubToken `
+        -Message $msg `
         -NoPush:$NoPush `
         -NoTag:$NoTag
     }
     else {
-      & pwsh -NoProfile -ExecutionPolicy Bypass -File $publishIntegrationScript `
+      Invoke-PublishScript `
+        -ScriptPath $publishIntegrationScript `
         -CurrentFile $driver.AnchorFile `
-        -Message $msg `
         -GitHubUsername $GitHubUsername `
         -GitHubToken $GitHubToken `
+        -Message $msg `
         -NoPush:$NoPush `
         -NoTag:$NoTag
     }

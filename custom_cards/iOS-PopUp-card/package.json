@@ -1,6 +1,6 @@
 {
   "name": "ios-popup-card",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
   "description": "Home Assistant custom card for iOS-style popup bottom sheets",
   "scripts": {

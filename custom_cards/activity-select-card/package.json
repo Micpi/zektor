@@ -1,6 +1,6 @@
 {
   "name": "activity-select-card",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Home Assistant custom card with configurable round activity buttons",
   "scripts": {

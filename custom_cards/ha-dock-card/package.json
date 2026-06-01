@@ -7,5 +7,5 @@
     "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('ios-dock.js','dist/ios-dock.js');console.log('dist/ios-dock.js generated');\"",
     "watch": "node -e \"console.log('Watch mode: use your editor/terminal watcher tooling for this card.');\""
   },
-  "version": "0.1.1"
+  "version": "0.2.1"
 }

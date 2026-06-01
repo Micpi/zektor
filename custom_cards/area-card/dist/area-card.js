@@ -254,6 +254,15 @@ class AlphaAreaCard extends HTMLElement {
     return deepClone(DEFAULT_CONFIG)
   }
 
+  static getGridOptions() {
+    return {
+      columns: 12,
+      min_columns: 6,
+      rows: 3,
+      min_rows: 3,
+    }
+  }
+
   static get observedAttributes() {
     return []
   }
@@ -939,7 +948,10 @@ class AlphaAreaCardEditor extends LitElement {
 
   _removeEntity(index) {
     const entities = this.config.entities || []
-    this._setValue("entities", entities.filter((_, i) => i !== index))
+    this._setValue(
+      "entities",
+      entities.filter((_, i) => i !== index)
+    )
   }
 
   _setEntity(index, value) {
@@ -956,11 +968,7 @@ class AlphaAreaCardEditor extends LitElement {
       <div class="entities-field">
         <div class="entities-header">
           <label>Entités</label>
-          <button
-            class="add-button"
-            @click="${() => this._addEntity()}"
-            title="Ajouter une entité"
-          >
+          <button class="add-button" @click="${() => this._addEntity()}" title="Ajouter une entité">
             + Ajouter
           </button>
         </div>

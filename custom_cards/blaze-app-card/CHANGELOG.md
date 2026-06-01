@@ -69,4 +69,16 @@ Toutes les evolutions sont listees ici avec un focus strict utilisateur.
 - changed: blaze-app-card.js
 - changed: hacs.json
 
+## v0.2.7 - 2026-06-01
+
+- feat(card): publish blaze-app-card v0.2.7
+- changed: .gitignore
+- changed: .publish/
+- changed: CHANGELOG.md
+- changed: README.md
+- changed: blaze-app-card.js
+- changed: hacs.json
+- changed: package-lock.json
+- changed: package.json
+
 

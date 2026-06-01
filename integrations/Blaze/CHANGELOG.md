@@ -187,4 +187,12 @@ Ce projet suit le [Versioning sémantique](https://semver.org/lang/fr/).
 - changed: hacs.json
 - changed: custom_components/blaze_powerzone/brand/
 
+## v1.0.14 - 2026-06-01
+
+- feat(integration): publish blaze-powerzone v1.0.14
+- changed: README.md
+- changed: custom_components/blaze_powerzone/manifest.json
+- changed: hacs.json
+- changed: brands_pr/
+
 
