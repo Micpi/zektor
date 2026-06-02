@@ -176,6 +176,14 @@ class ZektorAPIClient:
         # Unknown response
         return {"type": "unknown", "raw": response}
 
+    @staticmethod
+    def _extract_last_int(params: str) -> Optional[int]:
+        """Extract the last integer present in response params."""
+        matches = re.findall(r"-?\d+", params)
+        if not matches:
+            return None
+        return int(matches[-1])
+
     async def send_command_raw(self, command: str) -> dict[str, Any]:
         """Send a command and get the response."""
         async with self._lock:
@@ -263,6 +271,15 @@ class ZektorAPIClient:
             return result.get("status") == "ok"
         except ZektorProtocolError as e:
             _LOGGER.error("Failed to set zone source: %s", e)
+            return False
+
+    async def set_zone_digital_source(self, zone: int, source: int) -> bool:
+        """Set digital source for a zone using DSZ command."""
+        try:
+            result = await self.send_command_raw(f"DSZ @{zone},{source}")
+            return result.get("status") == "ok"
+        except ZektorProtocolError as e:
+            _LOGGER.error("Failed to set digital zone source: %s", e)
             return False
 
     async def set_zone_volume(self, zone: int, volume: int, fade: bool = False) -> bool:
@@ -370,11 +387,19 @@ class ZektorAPIClient:
         try:
             result = await self.send_command_raw(f"SZ @{zone}?")
             if result.get("type") == "status":
-                params = result.get("params", "").split(",")
-                if len(params) >= 2:
-                    return int(params[1])
+                return self._extract_last_int(result.get("params", ""))
         except (ZektorProtocolError, ValueError) as e:
             _LOGGER.debug("Failed to query zone source: %s", e)
+        return None
+
+    async def query_zone_digital_source(self, zone: int) -> Optional[int]:
+        """Query current digital source for a zone."""
+        try:
+            result = await self.send_command_raw(f"DSZ @{zone}?")
+            if result.get("type") == "status":
+                return self._extract_last_int(result.get("params", ""))
+        except (ZektorProtocolError, ValueError) as e:
+            _LOGGER.debug("Failed to query digital zone source: %s", e)
         return None
 
     async def query_zone_volume(self, zone: int) -> Optional[int]:
@@ -387,6 +412,26 @@ class ZektorAPIClient:
                     return int(params[1])
         except (ZektorProtocolError, ValueError) as e:
             _LOGGER.debug("Failed to query zone volume: %s", e)
+        return None
+
+    async def query_zone_crossover_type(self, zone: int) -> Optional[int]:
+        """Query crossover filter type for a zone (FTYPZ 0..5)."""
+        try:
+            result = await self.send_command_raw(f"FTYPZ @{zone}?")
+            if result.get("type") == "status":
+                return self._extract_last_int(result.get("params", ""))
+        except (ZektorProtocolError, ValueError) as e:
+            _LOGGER.debug("Failed to query zone crossover type: %s", e)
+        return None
+
+    async def query_zone_crossover_frequency(self, zone: int) -> Optional[int]:
+        """Query crossover cutoff frequency index for a zone (FFRQZ 0..32)."""
+        try:
+            result = await self.send_command_raw(f"FFRQZ @{zone}?")
+            if result.get("type") == "status":
+                return self._extract_last_int(result.get("params", ""))
+        except (ZektorProtocolError, ValueError) as e:
+            _LOGGER.debug("Failed to query zone crossover frequency: %s", e)
         return None
 
     async def detect_zone_capacity(self) -> Optional[int]:
