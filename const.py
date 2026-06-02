@@ -16,6 +16,14 @@ CONF_PORT = "port"
 CONF_NAME = "name"
 CONF_ZONES = "zones"
 
+# Polling profile
+LIGHT_POLL_EVERY = 1
+EXTENDED_POLL_EVERY = 10
+
+# Source ranges
+MAX_ANALOG_SOURCE = 80
+MAX_DIGITAL_SOURCE = 144
+
 # API Timeouts
 TCP_TIMEOUT = 10
 TCP_RETRY_DELAY = 2

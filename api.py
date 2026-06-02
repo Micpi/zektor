@@ -407,11 +407,39 @@ class ZektorAPIClient:
         try:
             result = await self.send_command_raw(f"VZ @{zone}?")
             if result.get("type") == "status":
-                params = result.get("params", "").split(",")
-                if len(params) >= 2:
-                    return int(params[1])
+                return self._extract_last_int(result.get("params", ""))
         except (ZektorProtocolError, ValueError) as e:
             _LOGGER.debug("Failed to query zone volume: %s", e)
+        return None
+
+    async def query_zone_bass(self, zone: int) -> Optional[int]:
+        """Query current bass level for a zone."""
+        try:
+            result = await self.send_command_raw(f"BAZ @{zone}?")
+            if result.get("type") == "status":
+                return self._extract_last_int(result.get("params", ""))
+        except (ZektorProtocolError, ValueError) as e:
+            _LOGGER.debug("Failed to query zone bass: %s", e)
+        return None
+
+    async def query_zone_treble(self, zone: int) -> Optional[int]:
+        """Query current treble level for a zone."""
+        try:
+            result = await self.send_command_raw(f"TRZ @{zone}?")
+            if result.get("type") == "status":
+                return self._extract_last_int(result.get("params", ""))
+        except (ZektorProtocolError, ValueError) as e:
+            _LOGGER.debug("Failed to query zone treble: %s", e)
+        return None
+
+    async def query_zone_balance(self, zone: int) -> Optional[int]:
+        """Query current balance for a zone."""
+        try:
+            result = await self.send_command_raw(f"BLZ @{zone}?")
+            if result.get("type") == "status":
+                return self._extract_last_int(result.get("params", ""))
+        except (ZektorProtocolError, ValueError) as e:
+            _LOGGER.debug("Failed to query zone balance: %s", e)
         return None
 
     async def query_zone_crossover_type(self, zone: int) -> Optional[int]:
@@ -450,6 +478,8 @@ class ZektorAPIClient:
                     # Some firmwares may ACK query command without returning status immediately.
                     return zone_count
             except (ZektorProtocolError, ZektorConnectionError, ValueError) as err:
-                _LOGGER.debug("Zone capacity probe failed for %s zones: %s", zone_count, err)
+                _LOGGER.debug(
+                    "Zone capacity probe failed for %s zones: %s", zone_count, err
+                )
 
         return None

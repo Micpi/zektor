@@ -1,16 +1,15 @@
 """Sensor platform for Zektor Audio System."""
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ZektorEntity
-from .const import CONF_ZONES, DEFAULT_ZONES, DOMAIN
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ async def async_setup_entry(
     coordinator = data["coordinator"]
     zones = data["zones"]
 
-    entities = []
+    entities: list[SensorEntity] = []
 
     # Add power status sensor
     entities.append(ZektorPowerSensor(coordinator, entry))
@@ -36,7 +35,9 @@ async def async_setup_entry(
         entities.append(ZektorZoneSourceSensor(coordinator, entry, zone_num))
         entities.append(ZektorZoneDigitalSourceSensor(coordinator, entry, zone_num))
         entities.append(ZektorZoneCrossoverTypeSensor(coordinator, entry, zone_num))
-        entities.append(ZektorZoneCrossoverFrequencySensor(coordinator, entry, zone_num))
+        entities.append(
+            ZektorZoneCrossoverFrequencySensor(coordinator, entry, zone_num)
+        )
 
     async_add_entities(entities)
 
