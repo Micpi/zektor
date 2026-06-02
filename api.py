@@ -388,3 +388,23 @@ class ZektorAPIClient:
         except (ZektorProtocolError, ValueError) as e:
             _LOGGER.debug("Failed to query zone volume: %s", e)
         return None
+
+    async def detect_zone_capacity(self) -> Optional[int]:
+        """Detect the supported zone count using known model capacities.
+
+        Returns the highest detected capacity among common Zektor models.
+        """
+        candidates = [64, 48, 32, 16, 2, 1]
+
+        for zone_count in candidates:
+            try:
+                result = await self.send_command_raw(f"SZ @{zone_count}?")
+                if result.get("type") in ("status",):
+                    return zone_count
+                if result.get("status") == "ok":
+                    # Some firmwares may ACK query command without returning status immediately.
+                    return zone_count
+            except (ZektorProtocolError, ZektorConnectionError, ValueError) as err:
+                _LOGGER.debug("Zone capacity probe failed for %s zones: %s", zone_count, err)
+
+        return None
