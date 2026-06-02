@@ -4,7 +4,12 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_HOST
 from homeassistant.core import callback
 
@@ -52,22 +57,26 @@ class ZektorConfigFlow(ConfigFlow, domain=DOMAIN):
                     _LOGGER.debug(
                         "Zektor connection established but power query did not return a value"
                     )
-
-                await self.async_set_unique_id(f"zektor_{user_input[CONF_HOST]}")
-                self._abort_if_unique_id_configured()
-
-                return self.async_create_entry(
-                    title=user_input.get(CONF_NAME, DEFAULT_NAME),
-                    data=user_input,
-                )
-
             except ZektorConnectionError:
-                errors["base"] = "cannot_connect"
+                # Do not block setup if the device is temporarily unreachable.
+                # The coordinator will retry automatically after setup.
+                _LOGGER.warning(
+                    "Zektor device is unreachable during setup (%s:%s), creating entry anyway",
+                    user_input[CONF_HOST],
+                    user_input.get(CONF_PORT, DEFAULT_PORT),
+                )
             except Exception as e:  # pylint: disable=broad-except
-                _LOGGER.error("Unexpected error: %s", e)
-                errors["base"] = "unknown"
+                _LOGGER.warning("Unexpected setup probe error, creating entry anyway: %s", e)
             finally:
                 await client.disconnect()
+
+            await self.async_set_unique_id(f"zektor_{user_input[CONF_HOST]}")
+            self._abort_if_unique_id_configured()
+
+            return self.async_create_entry(
+                title=user_input.get(CONF_NAME, DEFAULT_NAME),
+                data=user_input,
+            )
 
         schema = vol.Schema(
             {

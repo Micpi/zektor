@@ -6,7 +6,7 @@ from typing import Final
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_NAME, CONF_PORT, CONF_ZONES, DEFAULT_PORT, DEFAULT_ZONES, DOMAIN, MANUFACTURER
@@ -39,7 +39,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         zones,
     )
 
-    await coordinator.async_config_entry_first_refresh()
+    # Avoid hard-failing setup if the device is temporarily unavailable.
+    await coordinator.async_refresh()
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
@@ -94,8 +95,9 @@ class ZektorEntity(CoordinatorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
+        unique_id = self._entry.unique_id or self._entry.entry_id
         return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.unique_id)},
+            identifiers={(DOMAIN, unique_id)},
             name=self._entry.data.get(CONF_NAME, "Zektor Audio System"),
             manufacturer=MANUFACTURER,
             model="ProAudio/ClarityAudio",
