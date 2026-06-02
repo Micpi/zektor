@@ -43,6 +43,7 @@ async def async_setup_entry(
         entities.append(ZektorZoneBassNumber(coordinator, entry, zone_num))
         entities.append(ZektorZoneTrebleNumber(coordinator, entry, zone_num))
         entities.append(ZektorZoneBalanceNumber(coordinator, entry, zone_num))
+        entities.append(ZektorZoneDigitalSourceNumber(coordinator, entry, zone_num))
 
     async_add_entities(entities)
 
@@ -156,5 +157,39 @@ class ZektorZoneBalanceNumber(ZektorEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Set balance."""
         result = await self.coordinator.api.set_zone_balance(self._zone, int(value))
+        if result:
+            await self.coordinator.async_request_refresh()
+
+
+class ZektorZoneDigitalSourceNumber(ZektorEntity, NumberEntity):
+    """Zone digital source number entity (DSZ source id)."""
+
+    _attr_mode = NumberMode.BOX
+    _attr_native_min_value = 0
+    _attr_native_max_value = 144
+    _attr_native_step = 1
+
+    def __init__(self, coordinator, entry, zone: int) -> None:
+        """Initialize the number."""
+        super().__init__(coordinator, entry, zone)
+        self._attr_name = f"Zone {zone} Digital Source"
+        self._attr_unique_id = f"zektor_zone_{zone}_digital_source"
+
+    @property
+    def native_value(self) -> Optional[float]:
+        """Return current digital source id."""
+        if self.coordinator.data is None:
+            return None
+
+        zone_data = self.coordinator.data.get("zones", {}).get(f"zone_{self._zone}")
+        if zone_data is None:
+            return None
+
+        value = zone_data.get("digital_source")
+        return float(value) if value is not None else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set digital source id."""
+        result = await self.coordinator.api.set_zone_digital_source(self._zone, int(value))
         if result:
             await self.coordinator.async_request_refresh()

@@ -50,7 +50,12 @@ class ZektorDataUpdateCoordinator(DataUpdateCoordinator):
                 zones_data[zone_key] = {
                     "zone": zone_num,
                     "source": await self.api.query_zone_source(zone_num),
+                    "digital_source": await self.api.query_zone_digital_source(zone_num),
                     "volume": await self.api.query_zone_volume(zone_num),
+                    "crossover_type": await self.api.query_zone_crossover_type(zone_num),
+                    "crossover_frequency": await self.api.query_zone_crossover_frequency(
+                        zone_num
+                    ),
                 }
 
             data = {

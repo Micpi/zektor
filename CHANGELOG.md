@@ -2,6 +2,19 @@
 
 All notable changes to the Zektor Audio System integration will be documented in this file.
 
+## [0.3.4] - 2026-06-02
+
+### Added
+
+- ✅ Digital source selection per zone via new `number` entity (`DSZ` command).
+- ✅ Digital source state sensor per zone.
+- ✅ Crossover type visibility per zone (`FTYPZ`).
+- ✅ Crossover frequency visibility per zone (`FFRQZ`).
+
+### Changed
+
+- 🔄 Coordinator now polls digital source and crossover configuration for each zone.
+
 ## [0.3.3] - 2026-06-02
 
 ### Fixed

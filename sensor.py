@@ -34,6 +34,9 @@ async def async_setup_entry(
     for zone_num in range(1, zones + 1):
         entities.append(ZektorZoneVolumeSensor(coordinator, entry, zone_num))
         entities.append(ZektorZoneSourceSensor(coordinator, entry, zone_num))
+        entities.append(ZektorZoneDigitalSourceSensor(coordinator, entry, zone_num))
+        entities.append(ZektorZoneCrossoverTypeSensor(coordinator, entry, zone_num))
+        entities.append(ZektorZoneCrossoverFrequencySensor(coordinator, entry, zone_num))
 
     async_add_entities(entities)
 
@@ -110,3 +113,69 @@ class ZektorZoneSourceSensor(ZektorEntity, SensorEntity):
             return None
 
         return zone_data.get("source")
+
+
+class ZektorZoneDigitalSourceSensor(ZektorEntity, SensorEntity):
+    """Zone digital source sensor (DSZ)."""
+
+    def __init__(self, coordinator, entry, zone: int) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, zone)
+        self._attr_name = f"Zone {zone} Digital Source"
+        self._attr_unique_id = f"zektor_zone_{zone}_digital_source_sensor"
+
+    @property
+    def native_value(self) -> Optional[int]:
+        """Return the current digital source id."""
+        if self.coordinator.data is None:
+            return None
+
+        zone_data = self.coordinator.data.get("zones", {}).get(f"zone_{self._zone}")
+        if zone_data is None:
+            return None
+
+        return zone_data.get("digital_source")
+
+
+class ZektorZoneCrossoverTypeSensor(ZektorEntity, SensorEntity):
+    """Zone crossover type sensor (FTYPZ)."""
+
+    def __init__(self, coordinator, entry, zone: int) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, zone)
+        self._attr_name = f"Zone {zone} Crossover Type"
+        self._attr_unique_id = f"zektor_zone_{zone}_crossover_type"
+
+    @property
+    def native_value(self) -> Optional[int]:
+        """Return crossover type id (0..5)."""
+        if self.coordinator.data is None:
+            return None
+
+        zone_data = self.coordinator.data.get("zones", {}).get(f"zone_{self._zone}")
+        if zone_data is None:
+            return None
+
+        return zone_data.get("crossover_type")
+
+
+class ZektorZoneCrossoverFrequencySensor(ZektorEntity, SensorEntity):
+    """Zone crossover frequency sensor (FFRQZ)."""
+
+    def __init__(self, coordinator, entry, zone: int) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, zone)
+        self._attr_name = f"Zone {zone} Crossover Frequency"
+        self._attr_unique_id = f"zektor_zone_{zone}_crossover_frequency"
+
+    @property
+    def native_value(self) -> Optional[int]:
+        """Return crossover frequency index (0..32)."""
+        if self.coordinator.data is None:
+            return None
+
+        zone_data = self.coordinator.data.get("zones", {}).get(f"zone_{self._zone}")
+        if zone_data is None:
+            return None
+
+        return zone_data.get("crossover_frequency")
