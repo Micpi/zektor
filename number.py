@@ -68,13 +68,11 @@ class ZektorZoneVolumeNumber(ZektorEntity, NumberEntity):
         value = zone_data.get("volume")
         return float(value) if value is not None else None
 
-    def set_native_value(self, value: float) -> None:
-        self.hass.async_create_task(self._async_apply_value(value))
+    async def async_set_native_value(self, value: float) -> None:
+        await self.api.set_zone_volume(self._zone, int(value))
 
-    async def _async_apply_value(self, value: float) -> None:
-        result = await self.api.set_zone_volume(self._zone, int(value))
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+    def set_native_value(self, value: float) -> None:  # noqa: PLW0221
+        """Sync stub – HA calls async_set_native_value directly."""
 
 
 class ZektorZoneBassNumber(ZektorEntity, NumberEntity):
@@ -100,13 +98,11 @@ class ZektorZoneBassNumber(ZektorEntity, NumberEntity):
         value = zone_data.get("bass")
         return float(value) if value is not None else 128.0
 
-    def set_native_value(self, value: float) -> None:
-        self.hass.async_create_task(self._async_apply_value(value))
+    async def async_set_native_value(self, value: float) -> None:
+        await self.api.set_zone_bass(self._zone, int(value))
 
-    async def _async_apply_value(self, value: float) -> None:
-        result = await self.api.set_zone_bass(self._zone, int(value))
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+    def set_native_value(self, value: float) -> None:  # noqa: PLW0221
+        """Sync stub – HA calls async_set_native_value directly."""
 
 
 class ZektorZoneTrebleNumber(ZektorEntity, NumberEntity):
@@ -132,13 +128,11 @@ class ZektorZoneTrebleNumber(ZektorEntity, NumberEntity):
         value = zone_data.get("treble")
         return float(value) if value is not None else 128.0
 
-    def set_native_value(self, value: float) -> None:
-        self.hass.async_create_task(self._async_apply_value(value))
+    async def async_set_native_value(self, value: float) -> None:
+        await self.api.set_zone_treble(self._zone, int(value))
 
-    async def _async_apply_value(self, value: float) -> None:
-        result = await self.api.set_zone_treble(self._zone, int(value))
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+    def set_native_value(self, value: float) -> None:  # noqa: PLW0221
+        """Sync stub – HA calls async_set_native_value directly."""
 
 
 class ZektorZoneBalanceNumber(ZektorEntity, NumberEntity):
@@ -164,13 +158,11 @@ class ZektorZoneBalanceNumber(ZektorEntity, NumberEntity):
         value = zone_data.get("balance")
         return float(value) if value is not None else 200.0
 
-    def set_native_value(self, value: float) -> None:
-        self.hass.async_create_task(self._async_apply_value(value))
+    async def async_set_native_value(self, value: float) -> None:
+        await self.api.set_zone_balance(self._zone, int(value))
 
-    async def _async_apply_value(self, value: float) -> None:
-        result = await self.api.set_zone_balance(self._zone, int(value))
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+    def set_native_value(self, value: float) -> None:  # noqa: PLW0221
+        """Sync stub – HA calls async_set_native_value directly."""
 
 
 class ZektorZoneDigitalSourceNumber(ZektorEntity, NumberEntity):
@@ -196,10 +188,8 @@ class ZektorZoneDigitalSourceNumber(ZektorEntity, NumberEntity):
         value = zone_data.get("digital_source")
         return float(value) if value is not None else None
 
-    def set_native_value(self, value: float) -> None:
-        self.hass.async_create_task(self._async_apply_value(value))
+    async def async_set_native_value(self, value: float) -> None:
+        await self.api.set_zone_digital_source(self._zone, int(value))
 
-    async def _async_apply_value(self, value: float) -> None:
-        result = await self.api.set_zone_digital_source(self._zone, int(value))
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+    def set_native_value(self, value: float) -> None:  # noqa: PLW0221
+        """Sync stub – HA calls async_set_native_value directly."""

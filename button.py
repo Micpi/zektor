@@ -44,3 +44,6 @@ class ZektorReconnectButton(ZektorEntity, ButtonEntity):
             _LOGGER.info("Reconnected to Zektor device")
         except Exception as e:  # pylint: disable=broad-except
             _LOGGER.error("Failed to reconnect: %s", e)
+
+    def press(self) -> None:
+        """Sync stub."""

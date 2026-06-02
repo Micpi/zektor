@@ -16,9 +16,8 @@ CONF_PORT = "port"
 CONF_NAME = "name"
 CONF_ZONES = "zones"
 
-# Polling profile
-LIGHT_POLL_EVERY = 1
-EXTENDED_POLL_EVERY = 10
+# Polling profile (60 s safety-net reconcile; real updates are push-driven)
+DEFAULT_SCAN_INTERVAL = 60
 
 # Source ranges
 MAX_ANALOG_SOURCE = 80
