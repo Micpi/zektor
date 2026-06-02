@@ -11,7 +11,15 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import ZektorAPIClient, ZektorConnectionError
-from .const import CONF_NAME, CONF_PORT, CONF_ZONES, DEFAULT_NAME, DEFAULT_PORT, DEFAULT_ZONES, DOMAIN
+from .const import (
+    CONF_NAME,
+    CONF_PORT,
+    CONF_ZONES,
+    DEFAULT_NAME,
+    DEFAULT_PORT,
+    DEFAULT_ZONES,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,9 +50,7 @@ class ZektorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if power is None:
                     errors["base"] = "cannot_connect"
                 else:
-                    await self.async_set_unique_id(
-                        f"zektor_{user_input[CONF_HOST]}"
-                    )
+                    await self.async_set_unique_id(f"zektor_{user_input[CONF_HOST]}")
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(

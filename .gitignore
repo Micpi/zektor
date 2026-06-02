@@ -21,6 +21,8 @@
 # Autoriser uniquement les cartes et integrations HA
 !custom_cards/
 !custom_cards/**
+!custom_components/
+!custom_components/**
 !integrations/
 !integrations/**
 
