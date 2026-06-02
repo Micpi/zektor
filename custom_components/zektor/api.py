@@ -11,13 +11,9 @@ _LOGGER = logging.getLogger(__name__)
 class ZektorProtocolError(Exception):
     """Exception raised for Zektor protocol errors."""
 
-    pass
-
 
 class ZektorConnectionError(Exception):
     """Exception raised for connection errors."""
-
-    pass
 
 
 class ZektorAPIClient:
@@ -75,7 +71,7 @@ class ZektorAPIClient:
             try:
                 self._writer.close()
                 await self._writer.wait_closed()
-            except Exception as e:
+            except (OSError, RuntimeError) as e:
                 _LOGGER.debug("Error closing connection: %s", e)
         self._connected = False
         self._reader = None

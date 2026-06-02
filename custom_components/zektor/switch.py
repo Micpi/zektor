@@ -5,12 +5,11 @@ from typing import Any, Optional
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ZektorEntity
-from .const import CONF_ZONES, DEFAULT_ZONES, DOMAIN
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,13 +53,13 @@ class ZektorPowerSwitch(ZektorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the device."""
-        result = await self.coordinator.api.power_on()
+        result = await self.api.power_on()
         if result:
             await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the device."""
-        result = await self.coordinator.api.power_off()
+        result = await self.api.power_off()
         if result:
             await self.coordinator.async_request_refresh()
 
@@ -82,7 +81,7 @@ class ZektorZoneMuteSwitch(ZektorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Mute the zone."""
-        result = await self.coordinator.api.mute_zone(self._zone, True)
+        result = await self.api.mute_zone(self._zone, True)
         if result:
             self._is_muted = True
             self.async_write_ha_state()
@@ -90,7 +89,7 @@ class ZektorZoneMuteSwitch(ZektorEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Unmute the zone."""
-        result = await self.coordinator.api.mute_zone(self._zone, False)
+        result = await self.api.mute_zone(self._zone, False)
         if result:
             self._is_muted = False
             self.async_write_ha_state()
