@@ -47,7 +47,6 @@ class ZektorPowerSensor(ZektorEntity, SensorEntity):
 
     _attr_name = "Power"
     _attr_unique_id = "zektor_power"
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> Optional[str]:
