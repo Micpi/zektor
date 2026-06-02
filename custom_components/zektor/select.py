@@ -83,9 +83,7 @@ class ZektorZoneSourceSelect(ZektorEntity, SelectEntity):
         else:
             return
 
-        result = await self.api.set_zone_source(self._zone, source)
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+        await self.api.set_zone_source(self._zone, source)
 
 
 class ZektorZoneDigitalSourceSelect(ZektorEntity, SelectEntity):
@@ -139,6 +137,4 @@ class ZektorZoneDigitalSourceSelect(ZektorEntity, SelectEntity):
         else:
             return
 
-        result = await self.api.set_zone_digital_source(self._zone, source)
-        if result:
-            await self.zektor_coordinator.async_request_refresh()
+        await self.api.set_zone_digital_source(self._zone, source)

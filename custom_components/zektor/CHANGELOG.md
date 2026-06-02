@@ -2,6 +2,23 @@
 
 All notable changes to the Zektor Audio System integration will be documented in this file.
 
+## [0.3.6] - 2026-06-02
+
+### Changed
+
+- 🚀 **Architecture push-driven**: après chaque commande SET, l'écho TCP du device est lu immédiatement et met à jour l'état Home Assistant sans attendre le prochain poll. Toute modification est visible instantanément dans l'interface.
+- 🔌 **Dump complet à la connexion** : `query_all_state()` interroge toutes les variables (power, source, digital source, volume, mute, bass, treble, balance, crossover) pour toutes les zones au premier démarrage.
+- ♻️ Polling réduit à un simple reconcile de sécurité toutes les 60 s (contre polling constant avant).
+- 📡 `iot_class` mis à jour à `local_push` (HA sait maintenant que les updates arrivent en push).
+- 🗄️ État live centralisé dans l'API (`_state`) : source unique de vérité, callbacks notifiés à chaque changement.
+- ✂️ Suppression de `async_request_refresh()` après chaque set (redondant avec le callback push).
+- 🔇 `query_zone_mute` ajouté et intégré au dump complet.
+
+### Fixed
+
+- 🐛 **Correctif critique** : les commandes SET recevaient un echo status non lu qui polluait le buffer TCP et désynchronisait les lectures suivantes. Ce frame est maintenant drainé systématiquement.
+- 🔐 Fermeture propre des exceptions au niveau connexion (OSError/RuntimeError au lieu de `Exception`).
+
 ## [0.3.5] - 2026-06-02
 
 ### Added

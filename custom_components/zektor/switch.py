@@ -24,7 +24,7 @@ async def async_setup_entry(
     coordinator = data["coordinator"]
     zones = data["zones"]
 
-    entities = []
+    entities: list[SwitchEntity] = []
 
     # Add power switch
     entities.append(ZektorPowerSwitch(coordinator, entry))
@@ -53,15 +53,17 @@ class ZektorPowerSwitch(ZektorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the device."""
-        result = await self.api.power_on()
-        if result:
-            await self.coordinator.async_request_refresh()
+        await self.api.power_on()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the device."""
-        result = await self.api.power_off()
-        if result:
-            await self.coordinator.async_request_refresh()
+        await self.api.power_off()
+
+    def turn_on(self, **kwargs: Any) -> None:
+        """Sync stub."""
+
+    def turn_off(self, **kwargs: Any) -> None:
+        """Sync stub."""
 
 
 class ZektorZoneMuteSwitch(ZektorEntity, SwitchEntity):
@@ -81,16 +83,18 @@ class ZektorZoneMuteSwitch(ZektorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Mute the zone."""
-        result = await self.api.mute_zone(self._zone, True)
-        if result:
-            self._is_muted = True
-            self.async_write_ha_state()
-            await self.coordinator.async_request_refresh()
+        await self.api.mute_zone(self._zone, True)
+        self._is_muted = True
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Unmute the zone."""
-        result = await self.api.mute_zone(self._zone, False)
-        if result:
-            self._is_muted = False
-            self.async_write_ha_state()
-            await self.coordinator.async_request_refresh()
+        await self.api.mute_zone(self._zone, False)
+        self._is_muted = False
+        self.async_write_ha_state()
+
+    def turn_on(self, **kwargs: Any) -> None:
+        """Sync stub."""
+
+    def turn_off(self, **kwargs: Any) -> None:
+        """Sync stub."""
