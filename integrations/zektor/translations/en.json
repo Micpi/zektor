@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Zektor Audio System",
+        "description": "Enter the connection details for your Zektor/ClarityAudio/ProAudio device",
+        "data": {
+          "host": "Host (IP address or hostname)",
+          "port": "Port (default: 50005)",
+          "name": "Device Name",
+          "zones": "Number of Zones (1-64)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Please check the IP address and port.",
+      "unknown": "An unknown error occurred."
+    },
+    "abort": {
+      "already_configured": "Device is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Zektor Audio System",
+        "description": "Update the configuration",
+        "data": {
+          "zones": "Number of Zones (1-64)"
+        }
+      }
+    }
+  }
+}
