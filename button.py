@@ -1,16 +1,14 @@
 """Button platform for Zektor Audio System."""
 
 import logging
-from typing import Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ZektorEntity
-from .const import CONF_ZONES, DEFAULT_ZONES, DOMAIN
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +39,7 @@ class ZektorReconnectButton(ZektorEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Handle button press."""
         try:
-            await self.coordinator.api.disconnect()
+            await self.api.disconnect()
             await self.coordinator.async_request_refresh()
             _LOGGER.info("Reconnected to Zektor device")
         except Exception as e:  # pylint: disable=broad-except
