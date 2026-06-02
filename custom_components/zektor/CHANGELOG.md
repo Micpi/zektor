@@ -2,6 +2,22 @@
 
 All notable changes to the Zektor Audio System integration will be documented in this file.
 
+## [0.3.5] - 2026-06-02
+
+### Added
+
+- ✅ `SZ` source selection now supports full analog/coax/toslink id range (`source_1`..`source_80`), including examples like `source_38` (`^SZ @2,38$`).
+- ✅ Added dedicated digital source select entity per zone (`DSZ`) for easier control.
+
+### Changed
+
+- 🔄 Complete routing of zone variables in coordinator data model: `source`, `digital_source`, `volume`, `bass`, `treble`, `balance`, `crossover_type`, `crossover_frequency`.
+- ⚙️ Adaptive polling profile to reduce CPU/network load: high-change variables every cycle, low-change variables (EQ/crossover) every extended cycle.
+
+### Fixed
+
+- 🧠 Robust parser usage for numeric values across queried commands to avoid wrong field extraction.
+
 ## [0.3.4] - 2026-06-02
 
 ### Added

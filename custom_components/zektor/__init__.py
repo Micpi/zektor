@@ -9,7 +9,15 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_NAME, CONF_PORT, CONF_ZONES, DEFAULT_PORT, DEFAULT_ZONES, DOMAIN, MANUFACTURER
+from .const import (
+    CONF_NAME,
+    CONF_PORT,
+    CONF_ZONES,
+    DEFAULT_PORT,
+    DEFAULT_ZONES,
+    DOMAIN,
+    MANUFACTURER,
+)
 from .coordinator import ZektorDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -111,6 +119,16 @@ class ZektorEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self._entry = entry
         self._zone = zone
+
+    @property
+    def zektor_coordinator(self) -> ZektorDataUpdateCoordinator:
+        """Return strongly-typed coordinator."""
+        return self.coordinator  # type: ignore[return-value]
+
+    @property
+    def api(self):
+        """Shortcut to API client."""
+        return self.zektor_coordinator.api
 
     @property
     def device_info(self) -> DeviceInfo:

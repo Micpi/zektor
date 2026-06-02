@@ -1,16 +1,15 @@
 """Select platform for Zektor Audio System."""
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ZektorEntity
-from .const import CONF_ZONES, DEFAULT_ZONES, DOMAIN
+from .const import DOMAIN, MAX_ANALOG_SOURCE, MAX_DIGITAL_SOURCE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,17 +24,17 @@ async def async_setup_entry(
     coordinator = data["coordinator"]
     zones = data["zones"]
 
-    entities = []
+    entities: list[SelectEntity] = []
 
-    # Add zone source select
     for zone_num in range(1, zones + 1):
         entities.append(ZektorZoneSourceSelect(coordinator, entry, zone_num))
+        entities.append(ZektorZoneDigitalSourceSelect(coordinator, entry, zone_num))
 
     async_add_entities(entities)
 
 
 class ZektorZoneSourceSelect(ZektorEntity, SelectEntity):
-    """Zone source select entity."""
+    """Zone source select entity (SZ)."""
 
     def __init__(self, coordinator, entry, zone: int) -> None:
         """Initialize the select."""
@@ -45,25 +44,9 @@ class ZektorZoneSourceSelect(ZektorEntity, SelectEntity):
 
     @property
     def options(self) -> list[str]:
-        """Return available sources."""
-        return [
-            "disconnect",
-            "source_1",
-            "source_2",
-            "source_3",
-            "source_4",
-            "source_5",
-            "source_6",
-            "source_7",
-            "source_8",
-            "source_9",
-            "source_10",
-            "source_11",
-            "source_12",
-            "source_13",
-            "source_14",
-            "source_15",
-            "source_16",
+        """Return available SZ sources, including toslink ids."""
+        return ["disconnect"] + [
+            f"source_{source_id}" for source_id in range(1, MAX_ANALOG_SOURCE + 1)
         ]
 
     @property
@@ -82,10 +65,14 @@ class ZektorZoneSourceSelect(ZektorEntity, SelectEntity):
 
         if source == 0:
             return "disconnect"
-        elif 1 <= source <= 16:
+        if 1 <= source <= MAX_ANALOG_SOURCE:
             return f"source_{source}"
 
         return None
+
+    def select_option(self, option: str) -> None:
+        """Set source (sync wrapper for type-checkers)."""
+        self.hass.async_create_task(self.async_select_option(option))
 
     async def async_select_option(self, option: str) -> None:
         """Set source."""
@@ -96,6 +83,62 @@ class ZektorZoneSourceSelect(ZektorEntity, SelectEntity):
         else:
             return
 
-        result = await self.coordinator.api.set_zone_source(self._zone, source)
+        result = await self.api.set_zone_source(self._zone, source)
         if result:
-            await self.coordinator.async_request_refresh()
+            await self.zektor_coordinator.async_request_refresh()
+
+
+class ZektorZoneDigitalSourceSelect(ZektorEntity, SelectEntity):
+    """Zone digital source select entity (DSZ)."""
+
+    def __init__(self, coordinator, entry, zone: int) -> None:
+        """Initialize the select."""
+        super().__init__(coordinator, entry, zone)
+        self._attr_name = f"Zone {zone} Digital Source"
+        self._attr_unique_id = f"zektor_zone_{zone}_digital_source_select"
+
+    @property
+    def options(self) -> list[str]:
+        """Return available DSZ sources."""
+        return ["disconnect"] + [
+            f"digital_source_{source_id}"
+            for source_id in range(1, MAX_DIGITAL_SOURCE + 1)
+        ]
+
+    @property
+    def current_option(self) -> Optional[str]:
+        """Return current digital source."""
+        if self.coordinator.data is None:
+            return None
+
+        zone_data = self.coordinator.data.get("zones", {}).get(f"zone_{self._zone}")
+        if zone_data is None:
+            return None
+
+        source = zone_data.get("digital_source")
+        if source is None:
+            return None
+
+        if source == 0:
+            return "disconnect"
+        if 1 <= source <= MAX_DIGITAL_SOURCE:
+            return f"digital_source_{source}"
+
+        return None
+
+    def select_option(self, option: str) -> None:
+        """Set digital source (sync wrapper for type-checkers)."""
+        self.hass.async_create_task(self.async_select_option(option))
+
+    async def async_select_option(self, option: str) -> None:
+        """Set digital source."""
+        if option == "disconnect":
+            source = 0
+        elif option.startswith("digital_source_"):
+            source = int(option.split("_")[-1])
+        else:
+            return
+
+        result = await self.api.set_zone_digital_source(self._zone, source)
+        if result:
+            await self.zektor_coordinator.async_request_refresh()
