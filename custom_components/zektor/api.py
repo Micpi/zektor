@@ -1,15 +1,19 @@
-"""Zektor Audio System – async TCP API client.
+"""Zektor Audio System - async TCP API client.
 
 Architecture
 ------------
-* Persistent TCP connection with reconnect backoff.
-* Internal live-state cache (_state) updated after every command response.
-* After each SET command the device echoes the new state (e.g. ^=SZ @1,38$).
-  We read that echo immediately so the in-memory state is always current.
-* Registered callbacks are fired after any state change, allowing the
-  coordinator to push updates to Home Assistant without waiting for a poll.
-* query_all_state(zones) performs a full dump of every variable on all zones -
-  called once at connection to warm the cache.
+* Persistent TCP connection with exponential reconnect backoff.
+* connect() opens the socket only.
+* query_all_state(zones) sends a full query burst (direct read, no listener)
+  to warm the live-state cache, then starts a permanent background listener.
+* _listen() reads ALL incoming frames continuously:
+    - status frame  -> _apply_status() -> _notify() -> HA push update
+    - ack / error   -> discarded (only relevant during init)
+    - connection loss -> _notify() so HA marks entities unavailable
+* SET commands call _send_set() which is fire-and-forget (just writes to TCP).
+  The device echoes back the new state; the listener picks it up.
+* No periodic polling after init: the listener IS the only state driver.
+* detect_zone_capacity() must be called before query_all_state() (no listener).
 """
 
 from __future__ import annotations
@@ -21,7 +25,6 @@ from typing import Any, Callable, Optional
 
 _LOGGER = logging.getLogger(__name__)
 
-# Map of Zektor TCP command tokens to coordinator zone-dict field names.
 _CMD_TO_FIELD: dict[str, str] = {
     "SZ": "source",
     "DSZ": "digital_source",
@@ -60,21 +63,41 @@ class ZektorAPIClient:
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._connected = False
-        self._lock = asyncio.Lock()
+        self._lock = asyncio.Lock()   # serialises writes
         self._backoff = 1
 
-        # Live state – single source of truth.
+        # Live state cache - single source of truth.
         self._state: dict[str, Any] = {}
 
         # Callbacks fired on every state mutation.
         self._state_callbacks: list[Callable[[dict[str, Any]], None]] = []
+
+        # Background listener task.
+        self._listener_task: Optional[asyncio.Task] = None
+
+    # ------------------------------------------------------------------ #
+    # Public properties                                                    #
+    # ------------------------------------------------------------------ #
+
+    @property
+    def is_connected(self) -> bool:
+        """True if the TCP socket is open."""
+        return self._connected
+
+    @property
+    def is_listening(self) -> bool:
+        """True if the background listener task is alive."""
+        return (
+            self._listener_task is not None
+            and not self._listener_task.done()
+        )
 
     # ------------------------------------------------------------------ #
     # Connection management                                                #
     # ------------------------------------------------------------------ #
 
     async def connect(self) -> None:
-        """Open TCP connection (idempotent)."""
+        """Open TCP connection (idempotent). Does NOT start the listener."""
         if self._connected:
             return
         try:
@@ -96,7 +119,8 @@ class ZektorAPIClient:
             ) from exc
 
     async def disconnect(self) -> None:
-        """Close TCP connection."""
+        """Stop the listener and close the TCP connection."""
+        await self._stop_listener()
         if self._writer:
             try:
                 self._writer.close()
@@ -108,13 +132,70 @@ class ZektorAPIClient:
         self._writer = None
 
     # ------------------------------------------------------------------ #
-    # Callback registration                                                #
+    # Background listener                                                  #
+    # ------------------------------------------------------------------ #
+
+    def _start_listener(self) -> None:
+        """Start the persistent background frame-reader (idempotent)."""
+        if self.is_listening:
+            return
+        self._listener_task = asyncio.get_event_loop().create_task(self._listen())
+        _LOGGER.info("Zektor: persistent TCP listener started")
+
+    async def _stop_listener(self) -> None:
+        """Cancel and await the background listener task."""
+        if self._listener_task and not self._listener_task.done():
+            self._listener_task.cancel()
+            try:
+                await self._listener_task
+            except asyncio.CancelledError:
+                pass
+        self._listener_task = None
+
+    async def _listen(self) -> None:
+        """Read ALL incoming TCP frames and update live state.
+
+        This is the only code that reads from the socket after init.
+        It processes:
+          * status frames  -> apply state + fire callbacks
+          * ack / unknown  -> discard silently
+          * connection loss -> mark disconnected, fire callbacks
+        """
+        _LOGGER.info("Zektor: listener loop running")
+        while self._connected and self._reader:
+            try:
+                raw = await self._reader.readuntil(b"$")
+                frame = raw.decode().strip()
+                _LOGGER.debug("RX: %s", frame)
+                parsed = self._parse_frame(frame)
+                if parsed["type"] == "status":
+                    self._apply_and_notify(parsed)
+            except asyncio.CancelledError:
+                break
+            except (
+                asyncio.IncompleteReadError,
+                ConnectionResetError,
+                OSError,
+            ) as exc:
+                _LOGGER.warning("Zektor: connection lost in listener: %s", exc)
+                self._connected = False
+                self._notify()   # let HA mark entities unavailable
+                break
+            except Exception as exc:  # pylint: disable=broad-except
+                _LOGGER.error("Zektor: unexpected listener error: %s", exc)
+                self._connected = False
+                self._notify()
+                break
+        _LOGGER.info("Zektor: listener loop stopped")
+
+    # ------------------------------------------------------------------ #
+    # Callback management                                                  #
     # ------------------------------------------------------------------ #
 
     def register_state_callback(
         self, callback: Callable[[dict[str, Any]], None]
     ) -> None:
-        """Register a function called with the full state dict on every change."""
+        """Register a function called with full state on every change."""
         if callback not in self._state_callbacks:
             self._state_callbacks.append(callback)
 
@@ -128,7 +209,7 @@ class ZektorAPIClient:
             pass
 
     def _notify(self) -> None:
-        """Fire all registered state callbacks with a copy of current state."""
+        """Fire all registered callbacks with a snapshot of current state."""
         snapshot = dict(self._state)
         for cb in self._state_callbacks:
             try:
@@ -137,19 +218,17 @@ class ZektorAPIClient:
                 _LOGGER.exception("State callback raised an exception")
 
     # ------------------------------------------------------------------ #
-    # Low-level protocol                                                   #
+    # Low-level I/O (direct read/write - only during init, no listener)   #
     # ------------------------------------------------------------------ #
 
     async def _send_raw(self, command: str) -> None:
-        """Send a framed command over TCP."""
+        """Send a framed command. Caller must hold self._lock."""
         if not self._connected or self._writer is None:
             raise ZektorConnectionError("Not connected")
-
         if not command.startswith("^"):
             command = f"^{command}"
         if not command.endswith("$"):
             command = f"{command}$"
-
         try:
             _LOGGER.debug("TX: %s", command)
             self._writer.write(command.encode())
@@ -158,18 +237,17 @@ class ZektorAPIClient:
             self._connected = False
             raise ZektorConnectionError(f"Connection lost during send: {exc}") from exc
 
-    async def _read_frame(self, hard_timeout: Optional[float] = None) -> str:
-        """Read one complete Zektor frame (ends with $)."""
+    async def _read_frame_direct(self, hard_timeout: Optional[float] = None) -> str:
+        """Read one frame directly (init only - listener must not be running)."""
         if not self._connected or self._reader is None:
             raise ZektorConnectionError("Not connected")
-
         try:
             raw = await asyncio.wait_for(
                 self._reader.readuntil(b"$"),
                 timeout=hard_timeout if hard_timeout is not None else self.timeout,
             )
             frame = raw.decode().strip()
-            _LOGGER.debug("RX: %s", frame)
+            _LOGGER.debug("RX (init): %s", frame)
             return frame
         except asyncio.TimeoutError as exc:
             raise ZektorConnectionError("Read timeout") from exc
@@ -177,49 +255,26 @@ class ZektorAPIClient:
             self._connected = False
             raise ZektorConnectionError(f"Protocol error: {exc}") from exc
 
-    async def _try_read_frame(self, timeout: float = 0.5) -> Optional[str]:
-        """Read one frame with a short timeout; return None on timeout (non-fatal)."""
-        if not self._connected or self._reader is None:
-            return None
-        try:
-            raw = await asyncio.wait_for(
-                self._reader.readuntil(b"$"),
-                timeout=timeout,
-            )
-            frame = raw.decode().strip()
-            _LOGGER.debug("RX (opt): %s", frame)
-            return frame
-        except asyncio.TimeoutError:
-            return None
-        except (asyncio.LimitOverrunError, asyncio.IncompleteReadError) as exc:
-            self._connected = False
-            _LOGGER.debug("Protocol error on optional read: %s", exc)
-            return None
-
     # ------------------------------------------------------------------ #
-    # Response parsing                                                     #
+    # Frame parsing                                                        #
     # ------------------------------------------------------------------ #
 
     @staticmethod
     def _parse_frame(frame: str) -> dict[str, Any]:
         """Parse a raw Zektor frame into a structured dict."""
         s = frame.strip().lstrip("^").rstrip("$")
-
         if s == "+":
             return {"type": "ack"}
-
         if s.startswith("!"):
             try:
                 return {"type": "error", "code": int(s[1:])}
             except ValueError:
                 pass
-
         if s.startswith("="):
             parts = s[1:].split(None, 1)
             command = parts[0] if parts else ""
             params = parts[1] if len(parts) > 1 else ""
             return {"type": "status", "command": command, "params": params}
-
         return {"type": "unknown", "raw": s}
 
     @staticmethod
@@ -263,12 +318,12 @@ class ZektorAPIClient:
         return changed
 
     def _apply_and_notify(self, parsed: dict[str, Any]) -> None:
-        """Apply status to state and fire callbacks if something changed."""
+        """Apply a status frame to state and notify if changed."""
         if self._apply_status(parsed):
             self._notify()
 
     def state_as_coordinator_data(self, zones: int) -> dict[str, Any]:
-        """Convert internal _state into coordinator-format dict."""
+        """Convert internal _state to coordinator-format dict."""
         zones_dict: dict[str, Any] = {}
         for z in range(1, zones + 1):
             zk = f"zone_{z}"
@@ -288,325 +343,239 @@ class ZektorAPIClient:
         return {"power": self._state.get("power"), "zones": zones_dict}
 
     # ------------------------------------------------------------------ #
-    # Command primitive                                                    #
+    # Init-time query (direct I/O, listener must NOT be running)          #
     # ------------------------------------------------------------------ #
 
-    async def _execute(self, command: str) -> dict[str, Any]:
-        """Send command, read ACK + optional echo, return result.
+    async def _query_init(self, command: str) -> Optional[dict[str, Any]]:
+        """Send one query and read ACK + status directly (init only).
 
-        For query commands (containing ?): read ACK then mandatory status.
-        For set commands: read ACK then try to drain the echoed state frame.
-        The echoed frame updates _state and fires callbacks immediately.
+        Caller must hold self._lock.
         """
-        async with self._lock:
+        await self._send_raw(command)
+
+        # First frame: ACK or status (some devices skip ACK)
+        first = self._parse_frame(await self._read_frame_direct())
+        if first["type"] == "error":
+            raise ZektorProtocolError(f"Device error for: {command}")
+        if first["type"] == "status":
+            return first
+
+        # ACK received -> read the actual status frame
+        if first["type"] == "ack":
             try:
-                is_query = "?" in command
-                await self.connect()
-                await self._send_raw(command)
+                second = self._parse_frame(
+                    await self._read_frame_direct(hard_timeout=2.0)
+                )
+                if second["type"] == "status":
+                    return second
+            except ZektorConnectionError as exc:
+                _LOGGER.debug("No status after ACK for %s: %s", command, exc)
 
-                first = self._parse_frame(await self._read_frame())
-
-                if first["type"] == "error":
-                    raise ZektorProtocolError(
-                        f"Device error {first.get('code')} for: {command}"
-                    )
-
-                if first["type"] == "status":
-                    self._apply_and_notify(first)
-                    return first
-
-                if first["type"] == "ack":
-                    if is_query:
-                        second_frame = await self._try_read_frame(timeout=2.0)
-                        if second_frame:
-                            second = self._parse_frame(second_frame)
-                            if second["type"] == "error":
-                                raise ZektorProtocolError(
-                                    f"Device error {second.get('code')} for: {command}"
-                                )
-                            if second["type"] == "status":
-                                self._apply_and_notify(second)
-                                return second
-                    else:
-                        # SET: drain the echoed state frame to keep buffer clean.
-                        echo_frame = await self._try_read_frame(timeout=0.5)
-                        if echo_frame:
-                            echo = self._parse_frame(echo_frame)
-                            if echo["type"] == "status":
-                                self._apply_and_notify(echo)
-                                return echo
-                    return {"type": "ack", "status": "ok"}
-
-            except ZektorConnectionError:
-                self._connected = False
-                raise
-
-        return {"type": "unknown"}
+        return None
 
     # ------------------------------------------------------------------ #
-    # Full state query (called once at connection)                        #
+    # Full state query (called once at connect, before listener starts)   #
     # ------------------------------------------------------------------ #
 
     async def query_all_state(self, zones: int) -> dict[str, Any]:
-        """Query every variable for every zone and warm the state cache."""
-        _LOGGER.debug("Zektor: full state query for %d zones", zones)
+        """Query every variable for every zone, warm the cache, start listener.
 
-        self._state["power"] = await self.query_power()
+        The listener must NOT be running when this is called.
+        After the dump completes the listener is started automatically.
+        """
+        _LOGGER.info("Zektor: querying full state for %d zones", zones)
 
-        for zone in range(1, zones + 1):
-            zk = f"zone_{zone}"
-            self._state[zk] = {
-                "zone": zone,
-                "source": await self.query_zone_source(zone),
-                "digital_source": await self.query_zone_digital_source(zone),
-                "volume": await self.query_zone_volume(zone),
-                "mute": await self.query_zone_mute(zone),
-                "bass": await self.query_zone_bass(zone),
-                "treble": await self.query_zone_treble(zone),
-                "balance": await self.query_zone_balance(zone),
-                "crossover_type": await self.query_zone_crossover_type(zone),
-                "crossover_frequency": await self.query_zone_crossover_frequency(zone),
-            }
-            _LOGGER.debug("Zone %d loaded: %s", zone, self._state[zk])
+        # Safety: stop listener if somehow alive (e.g. reconnect path)
+        await self._stop_listener()
 
-        _LOGGER.info("Zektor: full state loaded (%d zones)", zones)
+        async with self._lock:
+            # -- Power -------------------------------------------------- #
+            try:
+                result = await self._query_init("P ?")
+                if result:
+                    self._apply_status(result)
+            except (ZektorProtocolError, ZektorConnectionError) as exc:
+                _LOGGER.debug("Init query P ? failed: %s", exc)
+
+            # -- All zones ---------------------------------------------- #
+            zone_queries = [
+                "SZ @{z}?",
+                "DSZ @{z}?",
+                "VZ @{z}?",
+                "VMZ @{z}?",
+                "BAZ @{z}?",
+                "TRZ @{z}?",
+                "BLZ @{z}?",
+                "FTYPZ @{z}?",
+                "FFRQZ @{z}?",
+            ]
+            for zone in range(1, zones + 1):
+                zk = f"zone_{zone}"
+                if zk not in self._state:
+                    self._state[zk] = {"zone": zone}
+                for tmpl in zone_queries:
+                    cmd = tmpl.format(z=zone)
+                    try:
+                        result = await self._query_init(cmd)
+                        if result:
+                            self._apply_status(result)
+                    except (ZektorProtocolError, ZektorConnectionError) as exc:
+                        _LOGGER.debug("Init query %s failed: %s", cmd, exc)
+                _LOGGER.debug(
+                    "Zektor init: zone %d -> %s", zone, self._state.get(zk, {})
+                )
+
+        _LOGGER.info("Zektor: full state loaded, starting persistent listener")
+        self._start_listener()
         return self.state_as_coordinator_data(zones)
+
+    # ------------------------------------------------------------------ #
+    # SET commands (fire-and-forget after listener is running)            #
+    # ------------------------------------------------------------------ #
+
+    async def _send_set(self, command: str) -> bool:
+        """Send a SET command.
+
+        Fire-and-forget: the listener will read the echo and update state.
+        Reconnects automatically if the connection was lost.
+        """
+        if not self._connected:
+            try:
+                await self.connect()
+            except ZektorConnectionError as exc:
+                _LOGGER.error("Cannot send %s: not connected: %s", command, exc)
+                return False
+        try:
+            async with self._lock:
+                await self._send_raw(command)
+            return True
+        except ZektorConnectionError as exc:
+            _LOGGER.error("Send failed (%s): %s", command, exc)
+            return False
 
     # ------------------------------------------------------------------ #
     # Power                                                                #
     # ------------------------------------------------------------------ #
 
     async def power_on(self) -> bool:
-        try:
-            await self._execute("P 1")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("power_on failed: %s", exc)
-            return False
+        return await self._send_set("P 1")
 
     async def power_off(self) -> bool:
-        try:
-            await self._execute("P 0")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("power_off failed: %s", exc)
-            return False
+        return await self._send_set("P 0")
 
     async def query_power(self) -> Optional[int]:
-        try:
-            result = await self._execute("P ?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_power failed: %s", exc)
-        return None
+        """Return cached power state (live cache, no TCP query)."""
+        return self._state.get("power")
 
     # ------------------------------------------------------------------ #
     # Zone source                                                          #
     # ------------------------------------------------------------------ #
 
     async def set_zone_source(self, zone: int, source: int) -> bool:
-        try:
-            await self._execute(f"SZ @{zone},{source}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_source z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"SZ @{zone},{source}")
 
     async def set_zone_digital_source(self, zone: int, source: int) -> bool:
-        try:
-            await self._execute(f"DSZ @{zone},{source}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_digital_source z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"DSZ @{zone},{source}")
 
     async def query_zone_source(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"SZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_source z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("source")
 
     async def query_zone_digital_source(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"DSZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_digital_source z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("digital_source")
 
     # ------------------------------------------------------------------ #
     # Zone volume                                                          #
     # ------------------------------------------------------------------ #
 
     async def set_zone_volume(self, zone: int, volume: int, fade: bool = False) -> bool:
-        try:
-            raw = volume + 10000 if fade else volume
-            await self._execute(f"VZ @{zone},{raw}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_volume z%d failed: %s", zone, exc)
-            return False
+        raw = volume + 10000 if fade else volume
+        return await self._send_set(f"VZ @{zone},{raw}")
 
     async def set_zone_volume_percent(self, zone: int, percent: int) -> bool:
-        try:
-            await self._execute(f"VPZ @{zone},{percent}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_volume_percent z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"VPZ @{zone},{percent}")
 
     async def query_zone_volume(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"VZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_volume z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("volume")
 
     # ------------------------------------------------------------------ #
     # Zone mute                                                            #
     # ------------------------------------------------------------------ #
 
     async def mute_zone(self, zone: int, mute: bool) -> bool:
-        try:
-            await self._execute(f"VMZ @{zone},{1 if mute else 0}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("mute_zone z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"VMZ @{zone},{1 if mute else 0}")
 
     async def query_zone_mute(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"VMZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_mute z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("mute")
 
     # ------------------------------------------------------------------ #
     # Zone EQ                                                              #
     # ------------------------------------------------------------------ #
 
     async def set_zone_bass(self, zone: int, bass: int) -> bool:
-        try:
-            await self._execute(f"BAZ @{zone},{bass}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_bass z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"BAZ @{zone},{bass}")
 
     async def set_zone_treble(self, zone: int, treble: int) -> bool:
-        try:
-            await self._execute(f"TRZ @{zone},{treble}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_treble z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"TRZ @{zone},{treble}")
 
     async def set_zone_balance(self, zone: int, balance: int) -> bool:
-        try:
-            await self._execute(f"BLZ @{zone},{balance}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_balance z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"BLZ @{zone},{balance}")
 
     async def query_zone_bass(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"BAZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_bass z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("bass")
 
     async def query_zone_treble(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"TRZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_treble z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("treble")
 
     async def query_zone_balance(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"BLZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_balance z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("balance")
 
     # ------------------------------------------------------------------ #
     # Zone crossover                                                       #
     # ------------------------------------------------------------------ #
 
     async def set_zone_crossover_type(self, zone: int, ftype: int) -> bool:
-        try:
-            await self._execute(f"FTYPZ @{zone},{ftype}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_crossover_type z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"FTYPZ @{zone},{ftype}")
 
     async def set_zone_crossover_frequency(self, zone: int, freq_index: int) -> bool:
-        try:
-            await self._execute(f"FFRQZ @{zone},{freq_index}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_zone_crossover_freq z%d failed: %s", zone, exc)
-            return False
+        return await self._send_set(f"FFRQZ @{zone},{freq_index}")
 
     async def query_zone_crossover_type(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"FTYPZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_crossover_type z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("crossover_type")
 
     async def query_zone_crossover_frequency(self, zone: int) -> Optional[int]:
-        try:
-            result = await self._execute(f"FFRQZ @{zone}?")
-            if result.get("type") == "status":
-                return self._extract_last_int(result.get("params", ""))
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.debug("query_zone_crossover_freq z%d failed: %s", zone, exc)
-        return None
+        return self._state.get(f"zone_{zone}", {}).get("crossover_frequency")
 
     # ------------------------------------------------------------------ #
     # Master volume                                                        #
     # ------------------------------------------------------------------ #
 
     async def set_master_volume(self, volume: int) -> bool:
-        try:
-            await self._execute(f"MV {volume}")
-            return True
-        except (ZektorProtocolError, ZektorConnectionError) as exc:
-            _LOGGER.error("set_master_volume failed: %s", exc)
-            return False
+        return await self._send_set(f"MV {volume}")
 
     # ------------------------------------------------------------------ #
-    # Zone detection                                                       #
+    # Zone detection (must run before query_all_state / listener)         #
     # ------------------------------------------------------------------ #
 
     async def detect_zone_capacity(self) -> Optional[int]:
-        """Probe the device to find its maximum supported zone count."""
-        for candidate in (64, 48, 32, 16, 8, 4, 2):
-            try:
-                result = await self._execute(f"SZ @{candidate}?")
-                if result.get("type") in ("status", "ack"):
-                    _LOGGER.info("Zektor zone capacity: %d", candidate)
-                    return candidate
-            except (ZektorProtocolError, ZektorConnectionError) as exc:
-                _LOGGER.debug("Zone probe %d failed: %s", candidate, exc)
+        """Probe the device to find its maximum supported zone count.
+
+        Must be called before query_all_state() (no listener running).
+        """
+        async with self._lock:
+            for candidate in (64, 48, 32, 16, 8, 4, 2):
+                try:
+                    await self._send_raw(f"SZ @{candidate}?")
+                    parsed = self._parse_frame(
+                        await self._read_frame_direct(hard_timeout=2.0)
+                    )
+                    if parsed.get("type") in ("status", "ack"):
+                        # Drain possible second frame
+                        try:
+                            await self._read_frame_direct(hard_timeout=1.0)
+                        except ZektorConnectionError:
+                            pass
+                        _LOGGER.info("Zektor zone capacity: %d", candidate)
+                        return candidate
+                except (ZektorProtocolError, ZektorConnectionError) as exc:
+                    _LOGGER.debug("Zone probe %d failed: %s", candidate, exc)
         return None
