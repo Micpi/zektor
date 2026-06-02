@@ -1,12 +1,12 @@
 {
   "domain": "zektor",
   "name": "Zektor Audio System",
-  "codeowners": ["@Cyrille-Vergely"],
+  "codeowners": ["@Micpi"],
   "config_flow": true,
-  "documentation": "https://github.com/Cyrille-Vergely/HomeAssistant-AI/tree/main/integrations/zektor",
+  "documentation": "https://github.com/Micpi/zektor/tree/main/custom_components/zektor",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/Cyrille-Vergely/HomeAssistant-AI/issues",
+  "issue_tracker": "https://github.com/Micpi/zektor/issues",
   "requirements": [],
-  "version": "1.0.0",
+  "version": "0.3.1",
   "homeassistant": "2024.1.0"
 }
