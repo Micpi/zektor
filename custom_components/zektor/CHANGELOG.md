@@ -2,6 +2,13 @@
 
 All notable changes to the Zektor Audio System integration will be documented in this file.
 
+## [0.3.2] - 2026-06-02
+
+### Fixed
+
+- ✅ Setup no longer blocks on temporary network issues during initial config flow.
+- ✅ Integration now loads even if the device is offline at startup, then retries via coordinator polling.
+
 ## [0.3.1] - 2026-06-02
 
 ### Fixed
