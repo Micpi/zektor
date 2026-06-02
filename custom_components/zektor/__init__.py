@@ -39,6 +39,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         zones,
     )
 
+    # Auto-detect zone capacity if still using the default zone count.
+    if entry.options.get(CONF_ZONES) is None and zones == DEFAULT_ZONES:
+        try:
+            await coordinator.api.connect()
+            detected_zones = await coordinator.api.detect_zone_capacity()
+            if detected_zones and detected_zones != zones:
+                zones = detected_zones
+                coordinator.zones = detected_zones
+                hass.config_entries.async_update_entry(
+                    entry,
+                    data={**entry.data, CONF_ZONES: detected_zones},
+                )
+                _LOGGER.info(
+                    "Auto-detected Zektor zone capacity: %s zones for %s",
+                    detected_zones,
+                    host,
+                )
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug("Zone auto-detection skipped: %s", err)
+
     # Avoid hard-failing setup if the device is temporarily unavailable.
     await coordinator.async_refresh()
 

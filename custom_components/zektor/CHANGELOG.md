@@ -2,6 +2,13 @@
 
 All notable changes to the Zektor Audio System integration will be documented in this file.
 
+## [0.3.3] - 2026-06-02
+
+### Fixed
+
+- ✅ Automatic zone capacity detection for Zektor models when configured with default zone count.
+- ✅ Integration now persists detected zone count to config entry data and creates the correct number of entities.
+
 ## [0.3.2] - 2026-06-02
 
 ### Fixed
