@@ -85,6 +85,9 @@ class ZektorAPIClient:
         """Send a raw command."""
         if not self._connected:
             raise ZektorConnectionError("Not connected to Zektor device")
+        writer = self._writer
+        if writer is None:
+            raise ZektorConnectionError("Connection writer is not available")
 
         if not command.startswith("^"):
             command = f"^{command}"
@@ -93,8 +96,8 @@ class ZektorAPIClient:
 
         try:
             _LOGGER.debug("Sending command: %s", command)
-            self._writer.write(command.encode())
-            await self._writer.drain()
+            writer.write(command.encode())
+            await writer.drain()
         except (BrokenPipeError, ConnectionResetError) as e:
             self._connected = False
             raise ZektorConnectionError(f"Connection lost: {e}") from e
@@ -116,6 +119,25 @@ class ZektorAPIClient:
         except asyncio.TimeoutError as e:
             self._connected = False
             raise ZektorConnectionError("Timeout waiting for response") from e
+        except (asyncio.LimitOverrunError, asyncio.IncompleteReadError) as e:
+            self._connected = False
+            raise ZektorConnectionError(f"Protocol error: {e}") from e
+
+    async def _read_response_optional(self, timeout: float = 1.5) -> Optional[str]:
+        """Read a response without marking the connection dead on timeout."""
+        if not self._connected or not self._reader:
+            raise ZektorConnectionError("Not connected to Zektor device")
+
+        try:
+            response = await asyncio.wait_for(
+                self._reader.readuntil(b"$"),
+                timeout=timeout,
+            )
+            response_str = response.decode().strip()
+            _LOGGER.debug("Received optional response: %s", response_str)
+            return response_str
+        except asyncio.TimeoutError:
+            return None
         except (asyncio.LimitOverrunError, asyncio.IncompleteReadError) as e:
             self._connected = False
             raise ZektorConnectionError(f"Protocol error: {e}") from e
@@ -158,6 +180,7 @@ class ZektorAPIClient:
         """Send a command and get the response."""
         async with self._lock:
             try:
+                is_query = "?" in command
                 await self.connect()
                 await self._send_command(command)
 
@@ -170,25 +193,26 @@ class ZektorAPIClient:
                         f"Command error: {ack.get('code')}: {command}"
                     )
 
-                if ack.get("type") == "ack":
-                    return {"status": "ok"}
-
                 # If we got a status immediately, return it
                 if ack.get("type") == "status":
                     return ack
 
-                # Try to read status update
-                try:
-                    status_response = await asyncio.wait_for(
-                        self._read_response(),
-                        timeout=0.1,
-                    )
+                if ack.get("type") == "ack":
+                    if not is_query:
+                        return {"status": "ok"}
+
+                    # Query commands usually return ACK first, then a status line.
+                    status_response = await self._read_response_optional(timeout=1.5)
+                    if status_response is None:
+                        return {"status": "ok"}
+
                     status = self._parse_response(status_response)
+                    if status.get("type") == "error":
+                        raise ZektorProtocolError(
+                            f"Command error: {status.get('code')}: {command}"
+                        )
                     if status.get("type") == "status":
                         return status
-                except asyncio.TimeoutError:
-                    # No status update, just the ack
-                    return {"status": "ok"}
 
                 return {"status": "ok"}
 
@@ -219,9 +243,10 @@ class ZektorAPIClient:
         try:
             result = await self.send_command_raw("P ?")
             if result.get("type") == "status":
-                params = result.get("params", "").split()
-                if len(params) >= 2:
-                    return int(params[1])
+                params = result.get("params", "").strip()
+                match = re.search(r"(\d+)$", params)
+                if match:
+                    return int(match.group(1))
         except (ZektorProtocolError, ValueError) as e:
             _LOGGER.error("Failed to get power status: %s", e)
         return None

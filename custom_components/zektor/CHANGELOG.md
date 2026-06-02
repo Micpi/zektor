@@ -2,6 +2,19 @@
 
 All notable changes to the Zektor Audio System integration will be documented in this file.
 
+## [0.3.1] - 2026-06-02
+
+### Fixed
+
+- ✅ Fixed setup flow false negatives: connection now succeeds when TCP access is valid even if immediate power query is unavailable.
+- ✅ Fixed query handling in TCP client for commands that return ACK then status (notably `P ?`).
+- ✅ Improved power status parsing robustness.
+- ✅ Updated repository metadata links in `manifest.json` to point to the published `Micpi/zektor` repository.
+
+### Changed
+
+- 🧱 HACS repository metadata moved to root-level `hacs.json` and integration kept in `custom_components/zektor` for HACS compliance.
+
 ## [1.0.0] - 2026-06-02
 
 ### Added
