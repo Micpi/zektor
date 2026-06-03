@@ -1,8 +1,0 @@
-custom_cards/my-card/
-│
-├── my-card.js
-├── editor.js
-├── styles.css
-├── package.json
-├── README.md
-└── examples/

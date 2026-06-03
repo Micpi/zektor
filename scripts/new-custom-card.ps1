@@ -146,26 +146,26 @@ $buildCommand = 'node -e "const fs=require(''fs'');fs.mkdirSync(''dist'',{recurs
 $watchCommand = 'node -e "console.log(''Watch mode: use your editor/terminal watcher tooling for this card.'');"'
 
 $packageJson = @{
-  name = $CardName
-  version = '0.1.0'
-  private = $true
+  name        = $CardName
+  version     = '0.1.0'
+  private     = $true
   description = $description
-  scripts = @{
+  scripts     = @{
     build = $buildCommand
     watch = $watchCommand
   }
-  license = 'MIT'
+  license     = 'MIT'
 } | ConvertTo-Json -Depth 10
 Set-Content -Path (Join-Path $cardPath 'package.json') -Value $packageJson
 Write-OK 'package.json cree'
 
 $hacsJson = @{
-  name = $DisplayName
+  name            = $DisplayName
   content_in_root = $false
-  filename = $entryFileName
-  render_readme = $true
-  homeassistant = '2024.1.0'
-  version = '0.1.0'
+  filename        = $entryFileName
+  render_readme   = $true
+  homeassistant   = '2024.1.0'
+  version         = '0.1.0'
 } | ConvertTo-Json
 Set-Content -Path (Join-Path $cardPath 'hacs.json') -Value $hacsJson
 Write-OK 'hacs.json cree'

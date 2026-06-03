@@ -2,8 +2,6 @@
   "name": "Zektor Audio System",
   "homeassistant": "2024.1.0",
   "render_readme": true,
-  "domains": [
-    "zektor"
-  ],
+  "domains": ["zektor"],
   "filename": "custom_components/zektor"
 }

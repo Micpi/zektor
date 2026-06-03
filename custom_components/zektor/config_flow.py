@@ -66,7 +66,9 @@ class ZektorConfigFlow(ConfigFlow, domain=DOMAIN):
                     user_input.get(CONF_PORT, DEFAULT_PORT),
                 )
             except Exception as e:  # pylint: disable=broad-except
-                _LOGGER.warning("Unexpected setup probe error, creating entry anyway: %s", e)
+                _LOGGER.warning(
+                    "Unexpected setup probe error, creating entry anyway: %s", e
+                )
             finally:
                 await client.disconnect()
 
