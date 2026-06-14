@@ -12,10 +12,6 @@
 !docs/**
 !scripts/
 !scripts/**
-!tests/
-tests/*
-!tests/nad_avr/
-!tests/nad_avr/**
 
 # Metadata et loader HACS (root repository files)
 !hacs.json
@@ -34,8 +30,6 @@ tests/*
 custom_cards/**/node_modules/
 custom_cards/**/*.log
 custom_cards/**/.npm/
-tests/**/__pycache__/
-tests/**/.pytest_cache/
 
 # HA secrets (defense en profondeur)
 **/secrets.yaml
