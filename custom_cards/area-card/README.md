@@ -18,11 +18,8 @@ Combinez image, capteurs et commandes dans un composant lisible, mobile-first et
 ## ✨ Points forts
 
 - prise en charge native des zones Home Assistant
-- editeur graphique integre au standard du workspace (`General`, `Actions`, `Styles`, `Defaults`)
+- editeur graphique integre pour les entites, styles et actions
 - affichage de capteurs, toggles et liste d'entites secondaires
-- actions avances: `tap_action`, `hold_action`, `double_tap_action` pour la carte
-- actions par defaut pour les entites en `hold` et `double tap`
-- filtres de domaines, tri et limitation du volume d'entites
 - rendu concis et rapide, avec rafraichissement limite aux changements utiles
 
 ## 📦 Installation
@@ -74,18 +71,9 @@ tap_action:
 
 - title: titre affiche sur la carte
 - area: identifiant de zone Home Assistant
-- auto_area_entities: auto-remplissage depuis la zone quand la liste d'entites est vide
 - entities: entites secondaires affichees dans la carte
 - hide_unavailable: masque les entites indisponibles
 - tap_action: action principale au clic
-- hold_action: action carte au clic droit / hold
-- double_tap_action: action carte au double-clic / double tap
-- entity_hold_action: action par defaut des entites au clic droit / hold
-- entity_double_tap_action: action par defaut des entites au double-clic / double tap
-- include_domains: liste de domaines a inclure (ex: light,switch)
-- exclude_domains: liste de domaines a exclure (ex: sensor,binary_sensor)
-- entity_sort: tri des entites (`none`, `name`, `domain`)
-- max_entities: limite le nombre d'entites affichees (`0` = illimite)
 - styles: apparence visuelle et variantes de presentation
 - darken_image: assombrit le fond image pour mieux detacher le texte
 - shadow: active l'ombre de carte
