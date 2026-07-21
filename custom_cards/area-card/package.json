@@ -1,6 +1,6 @@
 {
   "name": "alpha-area-card",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "private": true,
   "description": "Alpha Area Card for Home Assistant with visual editor",
   "scripts": {
