@@ -25,12 +25,15 @@ tests/*
 !hacs.json
 !homeassistant-ai-cards.js
 !README.md
+!README_WORKSPACE_CATALOG.md
+!PROJECT_CONTEXT.md
 
 # Autoriser uniquement les cartes et integrations HA
+# NB: custom_components/ (racine) a ete retire le 2026-07-26 - il dupliquait
+# integrations/ avec un contenu qui avait diverge. Source de verite = integrations/.
+# Voir _archive/custom_components_root_backup_2026-07-26/NOTE.md
 !custom_cards/
 !custom_cards/**
-!custom_components/
-!custom_components/**
 !integrations/
 !integrations/**
 
@@ -40,6 +43,8 @@ custom_cards/**/*.log
 custom_cards/**/.npm/
 tests/**/__pycache__/
 tests/**/.pytest_cache/
+integrations/**/__pycache__/
+integrations/**/.pytest_cache/
 
 # HA secrets (defense en profondeur)
 **/secrets.yaml

@@ -1,0 +1,40 @@
+# v1.2.11 - Alpha Area Card
+
+- Date: 2026-07-22
+- Component: card / area-card
+- Repository: Micpi/alpha-area-card
+- Previous tag: v1.2.10
+- HACS version: v1.2.11
+
+## Summary
+
+- chore(area-card): nettoyage javascript et badges compacts
+- Build:    📦 Build : area-card   ---------------------   📦 Installation des dépendances npm...  up to date, audited 1 package in 720ms  found 0 vulnerabilities   ✅ Dépendances installées   🔧 Build en cours...  > alpha-area-card@1.2.11 build > node -e "const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('alpha-area-card.js','dist/alpha-area-card.js');fs.copyFileSync('alpha-area-card.js','dist/area-card.js');console.log('dist/alpha-area-card.js generated');console.log('dist/area-card.js generated');"  dist/alpha-area-card.js generated dist/area-card.js generated   ✅ Fichier copié dans examples/cartes Lovelace/   ✅ Build terminé : area-card ok
+- Version metadata updated: hacs.json, package-lock.json, package.json
+
+## Detailed changelog
+
+### Card source
+
+- `alpha-area-card.js` - changed (+578 -41, working tree)
+
+### Documentation
+
+- `README.md` - changed (+1 -1, working tree)
+
+### HACS and metadata
+
+- `hacs.json` - changed (+1 -1, working tree)
+- `package-lock.json` - changed (+2 -2, working tree)
+- `package.json` - changed (+1 -1, working tree)
+
+## Commits since previous tag
+
+- No committed changes since previous tag before this release commit.
+
+## HACS update notes
+
+- HACS should detect this release from tag `v1.2.11`.
+- If the update does not appear immediately, refresh HACS cache or wait for the next HACS refresh cycle.
+
+

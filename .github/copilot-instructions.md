@@ -4,7 +4,7 @@
 
 Ce workspace est dédié au développement Home Assistant :
 
-- **Intégrations Python** (custom_components)
+- **Intégrations Python** (`integrations/`, 1 dossier = 1 repo Git = source de vérité HACS)
 - **Cartes Lovelace** (custom cards en JavaScript/TypeScript)
 - **Tableaux de bord** (YAML Lovelace)
 - **Automations** (YAML)
@@ -108,11 +108,9 @@ Après chaque génération :
 
 ### Règle release HACS obligatoire
 
-- Après toute modification touchant `custom_cards/` ou `integrations/`, préparer une release HACS avant de considérer la tâche terminée.
-- Minimum obligatoire : versions alignées (`package.json` + `hacs.json` pour les cartes, `manifest.json` + `hacs.json` pour les intégrations), `CHANGELOG.md` mis à jour si présent, build/dist régénéré pour les cartes, puis tag/release GitHub via les scripts du workspace.
-- Utiliser en priorité `scripts/release_hacs.ps1`, car il aligne les versions, génère le changelog détaillé, commit, tag et crée/met à jour la release GitHub avec ces notes.
-- Depuis VS Code, utiliser la tâche `HA: Release HACS détaillée (fichier courant)` pour déclencher cette publication sur le fichier actif.
-- Ne pas ignorer cette étape sauf demande explicite de l'utilisateur (`local only`, `pas de release`, `no push`, etc.).
+Règle détaillée : voir [`AGENTS.md`](../AGENTS.md) (source unique, lue par tous les agents IA du workspace) - ne pas la reformuler ici pour éviter que les deux versions divergent.
+
+Résumé : après toute modification touchant `custom_cards/` ou `integrations/`, préparer une release HACS avant de considérer la tâche terminée (versions alignées, changelog à jour, build régénéré, tag/release GitHub via `scripts/release_hacs.ps1` ou la tâche VS Code `HA: Release HACS détaillée (fichier courant)`), sauf demande explicite contraire de l'utilisateur.
 
 ---
 

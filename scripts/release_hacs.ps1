@@ -193,12 +193,15 @@ function Set-PackageLockVersion {
   )
 
   if (-not (Test-Path $Path)) { return $false }
-  $obj = Get-Content -Path $Path -Raw | ConvertFrom-Json
-  if ($obj.PSObject.Properties.Name.Contains('version')) {
-    $obj.version = $Version
+  $obj = Get-Content -Path $Path -Raw | ConvertFrom-Json -AsHashtable
+  if ($obj.ContainsKey('version')) {
+    $obj['version'] = $Version
   }
-  if ($obj.packages -and $obj.packages.PSObject.Properties.Name.Contains('')) {
-    $obj.packages.''.version = $Version
+  if ($obj.ContainsKey('packages') -and $obj['packages'].ContainsKey('')) {
+    $rootPackage = $obj['packages']['']
+    if ($rootPackage.ContainsKey('version')) {
+      $rootPackage['version'] = $Version
+    }
   }
   $obj | ConvertTo-Json -Depth 100 | Set-Content -Path $Path -Encoding UTF8
   return $true
@@ -389,6 +392,7 @@ function Get-LastTag {
 function Get-StatusEntries {
   param([string]$RepoPath)
 
+  & git -C $RepoPath update-index -q --refresh 2>$null
   $lines = @(& git -C $RepoPath status --porcelain)
   foreach ($line in $lines) {
     if ([string]::IsNullOrWhiteSpace($line)) { continue }

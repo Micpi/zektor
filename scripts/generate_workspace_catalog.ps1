@@ -2,7 +2,8 @@
 .SYNOPSIS
     Genere un README catalogue des cartes et integrations du workspace.
 .DESCRIPTION
-    Produit un inventaire versionne avec signalement des ecarts package/hacs.
+    Produit un inventaire versionne avec signalement des ecarts package/hacs,
+    et la liste des depots Git a ajouter dans HACS (Parametres > Depots personnalises).
 #>
 [CmdletBinding()]
 param(
@@ -19,6 +20,20 @@ function Get-Json([string]$path) {
   }
   catch {
     return $null
+  }
+}
+
+function Get-RepoUrl([string]$folderPath) {
+  if (-not (Test-Path (Join-Path $folderPath ".git"))) { return "N/A" }
+  try {
+    $url = git -C $folderPath remote get-url origin 2>$null
+    if (-not $url) { return "N/A" }
+    $url = $url.Trim()
+    if ($url.EndsWith(".git")) { $url = $url.Substring(0, $url.Length - 4) }
+    return $url
+  }
+  catch {
+    return "N/A"
   }
 }
 
@@ -50,6 +65,7 @@ if (Test-Path $cardsRoot) {
 
     $cardRows += [PSCustomObject]@{
       Name           = $card.Name
+      RepoUrl         = Get-RepoUrl $card.FullName
       HacsVersion    = $hacsVersion
       PackageVersion = $pkgVersion
       Status         = $status
@@ -77,7 +93,8 @@ if (Test-Path $integrationsRoot) {
       $configFlow = [string]$manifestJson.config_flow
     }
 
-    $hacsPath = Join-Path (Join-Path $integrationsRootPath $integrationFolder) "hacs.json"
+    $integrationRootPath = Join-Path $integrationsRootPath $integrationFolder
+    $hacsPath = Join-Path $integrationRootPath "hacs.json"
     $hacs = Get-Json $hacsPath
     $hacsVersion = if ($hacs -and $hacs.version) { [string]$hacs.version } else { "N/A" }
 
@@ -89,6 +106,7 @@ if (Test-Path $integrationsRoot) {
     $integrationRows += [PSCustomObject]@{
       Folder          = $integrationFolder
       Domain          = $domain
+      RepoUrl         = Get-RepoUrl $integrationRootPath
       ManifestVersion = $version
       HacsVersion     = $hacsVersion
       ConfigFlow      = $configFlow
@@ -102,29 +120,47 @@ $lines = @()
 $lines += "# Workspace Catalog Home Assistant"
 $lines += ""
 $lines += "Inventaire auto-genere des cartes et integrations de ce workspace."
+$lines += "Ce fichier est la SEULE source de verite pour la liste des depots a ajouter dans HACS -"
+$lines += "ne pas dupliquer cette liste ailleurs (docs, README, etc.), la referencer a la place."
 $lines += ""
 $lines += "- Date generation: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))"
 $lines += "- Regle: HACS et package/manifest doivent etre alignes pour eviter les versions incoherentes."
 $lines += ""
+$lines += "## Depots a ajouter dans HACS (Parametres > Depots personnalises)"
+$lines += ""
+$lines += "| Nom | Type HACS | URL du depot GitHub |"
+$lines += "| --- | --- | --- |"
+
+foreach ($r in $cardRows) {
+  $lines += "| $($r.Name) | Lovelace (Plugin) | $($r.RepoUrl) |"
+}
+$integrationRepoSeen = @{}
+foreach ($r in $integrationRows) {
+  if ($integrationRepoSeen.ContainsKey($r.Folder)) { continue }
+  $integrationRepoSeen[$r.Folder] = $true
+  $lines += "| $($r.Folder) | Integration | $($r.RepoUrl) |"
+}
+
+$lines += ""
 $lines += "## Cartes custom"
 $lines += ""
-$lines += "| Carte | Version HACS | Version package | Statut | README |"
-$lines += "| --- | --- | --- | --- | --- |"
+$lines += "| Carte | Depot GitHub | Version HACS | Version package | Statut | README |"
+$lines += "| --- | --- | --- | --- | --- | --- |"
 
 foreach ($r in $cardRows) {
   $readme = if ($r.ReadmePath -ne "N/A") { "[$($r.Name)]($($r.ReadmePath))" } else { "N/A" }
-  $lines += "| $($r.Name) | $($r.HacsVersion) | $($r.PackageVersion) | $($r.Status) | $readme |"
+  $lines += "| $($r.Name) | $($r.RepoUrl) | $($r.HacsVersion) | $($r.PackageVersion) | $($r.Status) | $readme |"
 }
 
 $lines += ""
 $lines += "## Integrations"
 $lines += ""
-$lines += "| Dossier | Domaine | Version manifest | Version HACS | Config flow | Statut | Manifest |"
-$lines += "| --- | --- | --- | --- | --- | --- | --- |"
+$lines += "| Dossier | Depot GitHub | Domaine | Version manifest | Version HACS | Config flow | Statut | Manifest |"
+$lines += "| --- | --- | --- | --- | --- | --- | --- | --- |"
 
 foreach ($r in $integrationRows) {
   $manifestLink = "[$($r.Domain)]($($r.ManifestPath))"
-  $lines += "| $($r.Folder) | $($r.Domain) | $($r.ManifestVersion) | $($r.HacsVersion) | $($r.ConfigFlow) | $($r.Status) | $manifestLink |"
+  $lines += "| $($r.Folder) | $($r.RepoUrl) | $($r.Domain) | $($r.ManifestVersion) | $($r.HacsVersion) | $($r.ConfigFlow) | $($r.Status) | $manifestLink |"
 }
 
 $lines += ""
@@ -132,6 +168,7 @@ $lines += "## Points d attention"
 $lines += ""
 $lines += "- Statut MISMATCH: aligner les versions avant release."
 $lines += "- Statut PARTIEL/A COMPLETER: definir une strategie unique de version (hacs + package pour cartes, hacs + manifest pour integrations)."
+$lines += "- Depot GitHub = N/A: dossier sans remote Git 'origin' configure (a corriger avant publication HACS)."
 $lines += "- Reexecuter ce script apres chaque publication: pwsh -File scripts/generate_workspace_catalog.ps1"
 
 $out = if ([System.IO.Path]::IsPathRooted($OutputFile)) {
