@@ -41,6 +41,40 @@ const DEFAULT_CONFIG = {
     show_stop: true,
     step: 10,
   },
+  labels: {
+    unavailable: "Entité introuvable",
+    action: "Action",
+    badge_light: "Lumière",
+    badge_button: "Action",
+    badge_volume: "Volume",
+    badge_cover: "Volet",
+    toggle: "Basculer",
+    brightness: "Luminosité",
+    brightness_down: "- Luminosité",
+    brightness_up: "+ Luminosité",
+    cooler: "Plus froid",
+    warmer: "Plus chaud",
+    run: "Exécuter",
+    mute: "Muet",
+    volume: "Volume",
+    volume_down: "- Volume",
+    volume_up: "+ Volume",
+    open: "Ouvrir",
+    stop: "Arrêter",
+    close: "Fermer",
+    position: "Position",
+    on: "Allumé",
+    off: "Éteint",
+    open_state: "Ouvert",
+    closed_state: "Fermé",
+    opening: "Ouverture",
+    closing: "Fermeture",
+    playing: "Lecture",
+    paused: "Pause",
+    idle: "Inactif",
+    standby: "Veille",
+    unknown: "Inconnu",
+  },
 }
 
 const PRESET_STYLES = {
@@ -87,7 +121,7 @@ class NaiveFlexCard extends LitElement {
 
   setConfig(config) {
     if (!config || !config.entity) {
-      throw new Error("Property 'entity' is required.")
+      throw new Error("La propriété 'entity' est obligatoire.")
     }
 
     const merged = this._mergeDeep({}, DEFAULT_CONFIG, config, {
@@ -177,7 +211,7 @@ class NaiveFlexCard extends LitElement {
   }
 
   get _stateDisplay() {
-    if (!this._entity) return "Unavailable"
+    if (!this._entity) return this._label("unknown")
 
     if (this._controlType === "volume") {
       const vol = this._entity.attributes?.volume_level
@@ -190,11 +224,38 @@ class NaiveFlexCard extends LitElement {
     }
 
     const unit = this._entity.attributes?.unit_of_measurement || ""
-    return `${this._entity.state}${unit ? ` ${unit}` : ""}`
+    return `${this._stateLabel(this._entity.state)}${unit ? ` ${unit}` : ""}`
   }
 
   get _presetStyle() {
     return PRESET_STYLES[this.config?.style?.preset] || PRESET_STYLES.modern
+  }
+
+  _label(key) {
+    return this.config?.labels?.[key] || DEFAULT_CONFIG.labels[key] || key
+  }
+
+  _stateLabel(state) {
+    const normalized = String(state || "").toLowerCase()
+    const map = {
+      on: "on",
+      off: "off",
+      open: "open_state",
+      closed: "closed_state",
+      opening: "opening",
+      closing: "closing",
+      playing: "playing",
+      paused: "paused",
+      idle: "idle",
+      standby: "standby",
+      unavailable: "unavailable",
+      unknown: "unknown",
+    }
+    return this._label(map[normalized] || normalized)
+  }
+
+  _controlLabel() {
+    return this._label(`badge_${this._controlType}`)
   }
 
   _resolveCssVariableValue(variableName) {
@@ -424,7 +485,7 @@ class NaiveFlexCard extends LitElement {
         const parsed = JSON.parse(buttons)
         return Array.isArray(parsed) ? parsed : []
       } catch (error) {
-        this._log("error", "Invalid button_row.buttons JSON", error)
+        this._log("error", "JSON invalide pour button_row.buttons", error)
         return []
       }
     }
@@ -440,7 +501,7 @@ class NaiveFlexCard extends LitElement {
       const safeId = group?.id || `group_${index + 1}`
       return {
         id: safeId,
-        label: group?.label || `Group ${index + 1}`,
+        label: group?.label || `Groupe ${index + 1}`,
         enabled: group?.enabled !== false,
         scroll: group?.scroll !== false,
         gap: Number(group?.gap ?? 8),
@@ -502,9 +563,9 @@ class NaiveFlexCard extends LitElement {
   async _callService(domain, service, serviceData = {}) {
     try {
       await this._hass.callService(domain, service, serviceData)
-      this._log("info", `Service called: ${domain}.${service}`, serviceData)
+      this._log("info", `Service appelé: ${domain}.${service}`, serviceData)
     } catch (error) {
-      this._log("error", `Service call failed: ${domain}.${service}`, error)
+      this._log("error", `Échec appel service: ${domain}.${service}`, error)
     }
   }
 
@@ -528,7 +589,7 @@ class NaiveFlexCard extends LitElement {
     if (action === "call-service") {
       const service = actionConfig.service || ""
       if (!service.includes(".")) {
-        this._log("warn", "call-service missing valid service domain", service)
+        this._log("warn", "Service invalide pour call-service", service)
         return
       }
       const [domain, serviceName] = service.split(".")
@@ -547,7 +608,7 @@ class NaiveFlexCard extends LitElement {
       return
     }
 
-    this._log("warn", "Unsupported action", action)
+    this._log("warn", "Action non prise en charge", action)
   }
 
   async _onCardTap() {
@@ -668,7 +729,13 @@ class NaiveFlexCard extends LitElement {
   async _changeBrightness(direction) {
     const step = Number(this.config.light_controls.brightness_step || 15)
     const current = Number(this._entity?.attributes?.brightness ?? 0)
-    const next = this._clamp(current + direction * step, 1, 255)
+    const next = this._clamp(current + direction * step, 0, 255)
+    if (next === 0) {
+      await this._callService("light", "turn_off", {
+        entity_id: this.config.entity,
+      })
+      return
+    }
     await this._callService("light", "turn_on", {
       entity_id: this.config.entity,
       brightness: next,
@@ -677,6 +744,12 @@ class NaiveFlexCard extends LitElement {
 
   async _setBrightness(event) {
     const value = Number(event.target.value)
+    if (value <= 0) {
+      await this._callService("light", "turn_off", {
+        entity_id: this.config.entity,
+      })
+      return
+    }
     await this._callService("light", "turn_on", {
       entity_id: this.config.entity,
       brightness: value,
@@ -763,7 +836,7 @@ class NaiveFlexCard extends LitElement {
     if (button.action === "call-service" && button.service) {
       const [domain, service] = button.service.split(".")
       if (!domain || !service) {
-        this._log("warn", "Invalid extra button service", button.service)
+        this._log("warn", "Service invalide pour le bouton", button.service)
         return
       }
 
@@ -794,36 +867,99 @@ class NaiveFlexCard extends LitElement {
       }
     }
 
-    this._log("warn", "Unsupported extra button action", button)
+    this._log("warn", "Action de bouton non prise en charge", button)
+  }
+
+  _sliderPercent(value, min, max) {
+    const low = Number(min)
+    const high = Number(max)
+    if (!Number.isFinite(low) || !Number.isFinite(high) || high === low) return 0
+    return this._clamp(((Number(value) - low) / (high - low)) * 100, 0, 100)
+  }
+
+  _syncRangePreview(event, min, max, formatter) {
+    const input = event.target
+    const value = Number(input.value)
+    const percent = this._sliderPercent(value, min, max)
+    input.style.setProperty("--slider-progress", `${percent}%`)
+
+    const block = input.closest(".slider-block")
+    const valueText = formatter ? formatter(value) : `${Math.round(percent)}%`
+    block?.querySelectorAll(".slider-value, .slider-inline-value").forEach((valueEl) => {
+      valueEl.textContent = valueText
+    })
+  }
+
+  _renderUnifiedSlider({ label, icon, value, min, max, step, onChange, formatter }) {
+    const percent = this._sliderPercent(value, min, max)
+    const displayValue = formatter ? formatter(value) : `${Math.round(percent)}%`
+
+    return html`
+      <div class="slider-block">
+        <div class="slider-head">
+          <span>${label}</span>
+          <strong class="slider-value">${displayValue}</strong>
+        </div>
+        <div class="slider-shell">
+          <div class="slider-icon">
+            <ha-icon icon="${icon}"></ha-icon>
+          </div>
+          <div class="range-shell">
+            <input
+              class="unified-range"
+              type="range"
+              min="${min}"
+              max="${max}"
+              step="${step}"
+              aria-label="${label}"
+              style="--slider-progress:${percent}%;"
+              .value="${String(value)}"
+              @input="${(event) => this._syncRangePreview(event, min, max, formatter)}"
+              @change="${onChange}"
+            />
+            <div class="range-label">
+              <span>${label}</span>
+              <span class="slider-inline-value">${displayValue}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
   }
 
   _renderControlLight() {
     const brightness = Number(this._entity?.attributes?.brightness ?? 0)
     return html`
       <div class="control-grid">
-        <button class="chip" @click="${this._toggleMain}">Toggle</button>
-        <button class="chip" @click="${() => this._changeBrightness(-1)}">- Bright</button>
-        <button class="chip" @click="${() => this._changeBrightness(1)}">+ Bright</button>
+        <button class="chip" @click="${this._toggleMain}">${this._label("toggle")}</button>
+        <button class="chip" @click="${() => this._changeBrightness(-1)}">
+          ${this._label("brightness_down")}
+        </button>
+        <button class="chip" @click="${() => this._changeBrightness(1)}">
+          ${this._label("brightness_up")}
+        </button>
       </div>
       ${this.config.light_controls.show_brightness
-        ? html`
-            <div class="slider-block">
-              <label>Brightness</label>
-              <input
-                type="range"
-                min="1"
-                max="255"
-                .value="${String(brightness)}"
-                @change="${this._setBrightness}"
-              />
-            </div>
-          `
+        ? this._renderUnifiedSlider({
+            label: this._label("brightness"),
+            icon: this._icon,
+            value: brightness,
+            min: 0,
+            max: 255,
+            step: 1,
+            formatter: (value) => `${Math.round((Number(value) / 255) * 100)}%`,
+            onChange: this._setBrightness,
+          })
         : ""}
       ${this.config.light_controls.show_color_temp
         ? html`
             <div class="control-grid">
-              <button class="chip" @click="${() => this._changeColorTemp(-1)}">Cooler</button>
-              <button class="chip" @click="${() => this._changeColorTemp(1)}">Warmer</button>
+              <button class="chip" @click="${() => this._changeColorTemp(-1)}">
+                ${this._label("cooler")}
+              </button>
+              <button class="chip" @click="${() => this._changeColorTemp(1)}">
+                ${this._label("warmer")}
+              </button>
             </div>
           `
         : ""}
@@ -833,7 +969,7 @@ class NaiveFlexCard extends LitElement {
   _renderControlButton() {
     return html`
       <div class="control-grid single">
-        <button class="chip primary" @click="${this._buttonPress}">Run</button>
+        <button class="chip primary" @click="${this._buttonPress}">${this._label("run")}</button>
       </div>
     `
   }
@@ -842,24 +978,25 @@ class NaiveFlexCard extends LitElement {
     const volume = Number(this._entity?.attributes?.volume_level ?? 0)
     return html`
       <div class="control-grid">
-        <button class="chip" @click="${this._toggleMute}">Mute</button>
-        <button class="chip" @click="${() => this._changeVolume(-1)}">- Vol</button>
-        <button class="chip" @click="${() => this._changeVolume(1)}">+ Vol</button>
+        <button class="chip" @click="${this._toggleMute}">${this._label("mute")}</button>
+        <button class="chip" @click="${() => this._changeVolume(-1)}">
+          ${this._label("volume_down")}
+        </button>
+        <button class="chip" @click="${() => this._changeVolume(1)}">
+          ${this._label("volume_up")}
+        </button>
       </div>
       ${this.config.volume_controls.show_slider
-        ? html`
-            <div class="slider-block">
-              <label>Volume</label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                .value="${String(volume)}"
-                @change="${this._setVolume}"
-              />
-            </div>
-          `
+        ? this._renderUnifiedSlider({
+            label: this._label("volume"),
+            icon: this._icon,
+            value: volume,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            formatter: (value) => `${Math.round(Number(value) * 100)}%`,
+            onChange: this._setVolume,
+          })
         : ""}
     `
   }
@@ -868,25 +1005,28 @@ class NaiveFlexCard extends LitElement {
     const position = Number(this._entity?.attributes?.current_position ?? 0)
     return html`
       <div class="control-grid">
-        <button class="chip" @click="${() => this._coverAction("open_cover")}">Open</button>
+        <button class="chip" @click="${() => this._coverAction("open_cover")}">
+          ${this._label("open")}
+        </button>
         ${this.config.cover_controls.show_stop
           ? html`<button class="chip" @click="${() => this._coverAction("stop_cover")}">
-              Stop
+              ${this._label("stop")}
             </button>`
           : ""}
-        <button class="chip" @click="${() => this._coverAction("close_cover")}">Close</button>
+        <button class="chip" @click="${() => this._coverAction("close_cover")}">
+          ${this._label("close")}
+        </button>
       </div>
-      <div class="slider-block">
-        <label>Position</label>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          .value="${String(position)}"
-          @change="${this._setCoverPosition}"
-        />
-      </div>
+      ${this._renderUnifiedSlider({
+        label: this._label("position"),
+        icon: this._icon,
+        value: position,
+        min: 0,
+        max: 100,
+        step: 1,
+        formatter: (value) => `${Math.round(Number(value))}%`,
+        onChange: this._setCoverPosition,
+      })}
     `
   }
 
@@ -907,7 +1047,7 @@ class NaiveFlexCard extends LitElement {
                 @click="${() => this._onExtraButtonTap(button)}"
               >
                 ${button.icon ? html`<ha-icon icon="${button.icon}"></ha-icon>` : ""}
-                <span>${button.label || button.name || "Action"}</span>
+                <span>${button.label || button.name || this._label("action")}</span>
               </button>
             `
           )}
@@ -947,7 +1087,7 @@ class NaiveFlexCard extends LitElement {
   render() {
     if (!this._entity) {
       return html`<ha-card
-        ><div class="unavailable">Entity not found: ${this.config?.entity}</div></ha-card
+        ><div class="unavailable">${this._label("unavailable")}: ${this.config?.entity}</div></ha-card
       >`
     }
 
@@ -985,7 +1125,7 @@ class NaiveFlexCard extends LitElement {
                   : ""}
               </div>
             </div>
-            <div class="badge">${this._controlType}</div>
+            <div class="badge">${this._controlLabel()}</div>
           </div>
 
           ${this._renderControlByType()} ${this._renderExtraButtons()}
@@ -1016,7 +1156,7 @@ class NaiveFlexCard extends LitElement {
         min_button_width: 72,
         max_button_width: 132,
         buttons: [
-          { label: "Off", icon: "mdi:power", action: "call-service", service: "light.turn_off" },
+          { label: "Éteint", icon: "mdi:power", action: "call-service", service: "light.turn_off" },
           {
             label: "50%",
             icon: "mdi:brightness-6",
@@ -1211,6 +1351,7 @@ class NaiveFlexCard extends LitElement {
       }
 
       .chip {
+        min-width: 0;
         min-height: 36px;
         border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1218,6 +1359,10 @@ class NaiveFlexCard extends LitElement {
         color: var(--text-color);
         font-size: 0.8rem;
         font-weight: 600;
+        overflow: hidden;
+        padding: 0 8px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         cursor: pointer;
         transition:
           background 150ms ease,
@@ -1236,16 +1381,146 @@ class NaiveFlexCard extends LitElement {
 
       .slider-block {
         display: grid;
-        gap: 4px;
+        gap: 6px;
       }
 
-      .slider-block label {
+      .slider-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 2px;
         font-size: 0.75rem;
         color: var(--inactive-color);
       }
 
-      .slider-block input[type="range"] {
+      .slider-head span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .slider-head strong {
+        flex-shrink: 0;
+        color: var(--text-color);
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+
+      .slider-shell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+      }
+
+      .slider-icon {
+        flex: 0 0 34px;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--accent-color);
+      }
+
+      .slider-icon ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .range-shell {
+        position: relative;
+        flex: 1;
+        height: 44px;
+        min-width: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.07);
+      }
+
+      .unified-range {
+        position: absolute;
+        inset: 0;
         width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: inherit;
+        outline: none;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background:
+          linear-gradient(
+            90deg,
+            var(--accent-color) 0%,
+            var(--accent-color) var(--slider-progress, 0%),
+            rgba(255, 255, 255, 0.07) var(--slider-progress, 0%),
+            rgba(255, 255, 255, 0.07) 100%
+          );
+      }
+
+      .unified-range::-webkit-slider-runnable-track {
+        height: 44px;
+        border: 0;
+        background: transparent;
+      }
+
+      .unified-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 24px;
+        height: 44px;
+        border: 0;
+        background: transparent;
+      }
+
+      .unified-range::-moz-range-track {
+        height: 44px;
+        border: 0;
+        background: transparent;
+      }
+
+      .unified-range::-moz-range-thumb {
+        width: 24px;
+        height: 44px;
+        border: 0;
+        background: transparent;
+      }
+
+      .unified-range:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--accent-color);
+      }
+
+      .range-label {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 12px;
+        pointer-events: none;
+        color: var(--text-color);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+        font-size: 0.78rem;
+        font-weight: 650;
+      }
+
+      .range-label span:first-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .range-label span:last-child {
+        flex-shrink: 0;
+        color: var(--text-color);
+        opacity: 0.9;
       }
 
       .extra-row {
@@ -1326,7 +1601,18 @@ class NaiveFlexCard extends LitElement {
 
       @media (max-width: 600px) {
         .control-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .control-grid.single {
+          grid-template-columns: 1fr;
+        }
+
+        .chip {
+          font-size: 0.72rem;
+          min-height: 34px;
+          padding: 0 5px;
         }
 
         .badge {
@@ -1353,9 +1639,25 @@ class NaiveFlexCardEditor extends LitElement {
         ...DEFAULT_CONFIG.style,
         ...(config.style || {}),
       },
+      light_controls: {
+        ...DEFAULT_CONFIG.light_controls,
+        ...(config.light_controls || {}),
+      },
+      volume_controls: {
+        ...DEFAULT_CONFIG.volume_controls,
+        ...(config.volume_controls || {}),
+      },
+      cover_controls: {
+        ...DEFAULT_CONFIG.cover_controls,
+        ...(config.cover_controls || {}),
+      },
       button_row: {
         ...DEFAULT_CONFIG.button_row,
         ...(config.button_row || {}),
+      },
+      labels: {
+        ...DEFAULT_CONFIG.labels,
+        ...(config.labels || {}),
       },
     }
 
@@ -1481,10 +1783,27 @@ class NaiveFlexCardEditor extends LitElement {
     `
   }
 
+  _labelValue(key) {
+    return this.config?.labels?.[key] ?? DEFAULT_CONFIG.labels[key] ?? ""
+  }
+
+  _renderLabelTextField(label, key) {
+    return html`
+      <div>
+        <label>${label}</label>
+        <input
+          .value="${this._labelValue(key)}"
+          placeholder="${DEFAULT_CONFIG.labels[key] || ""}"
+          @input="${(event) => this._onInput(`labels.${key}`, event)}"
+        />
+      </div>
+    `
+  }
+
   _actionLabel(actionKey) {
-    if (actionKey === "tap_action") return "Tap"
-    if (actionKey === "hold_action") return "Hold"
-    return "Double Tap"
+    if (actionKey === "tap_action") return "Appui"
+    if (actionKey === "hold_action") return "Appui long"
+    return "Double appui"
   }
 
   _actionConfig(actionKey) {
@@ -1577,7 +1896,7 @@ class NaiveFlexCardEditor extends LitElement {
     return html`
       <div class="subsection">
         <div class="subsection-header">
-          <span>Service Data</span>
+          <span>Données de service</span>
           <button class="small-btn" @click="${() => this._addCardActionData(actionKey)}">
             + Param
           </button>
@@ -1602,12 +1921,12 @@ class NaiveFlexCardEditor extends LitElement {
                     class="small-btn danger"
                     @click="${() => this._removeCardActionData(actionKey, key)}"
                   >
-                    Remove
+                    Supprimer
                   </button>
                 </div>
               `
             )
-          : html`<div class="hint">No service data defined.</div>`}
+          : html`<div class="hint">Aucune donnée de service définie.</div>`}
       </div>
     `
   }
@@ -1618,18 +1937,18 @@ class NaiveFlexCardEditor extends LitElement {
 
     return html`
       <div class="action-editor">
-        <label>${this._actionLabel(actionKey)} Action</label>
+        <label>Action - ${this._actionLabel(actionKey)}</label>
         <select
           .value="${actionType}"
           @change="${(event) => this._setActionType(actionKey, event.target.value)}"
         >
-          ${actionKey === "tap_action" ? html`<option value="default">default</option>` : ""}
-          <option value="none">none</option>
-          <option value="more-info">more-info</option>
-          <option value="toggle">toggle</option>
-          <option value="call-service">call-service</option>
-          <option value="navigate">navigate</option>
-          <option value="url">url</option>
+          ${actionKey === "tap_action" ? html`<option value="default">Défaut</option>` : ""}
+          <option value="none">Aucune</option>
+          <option value="more-info">Plus d'informations</option>
+          <option value="toggle">Basculer</option>
+          <option value="call-service">Appeler un service</option>
+          <option value="navigate">Naviguer</option>
+          <option value="url">Ouvrir une URL</option>
         </select>
 
         ${actionType === "call-service"
@@ -1646,7 +1965,7 @@ class NaiveFlexCardEditor extends LitElement {
           : ""}
         ${actionType === "navigate"
           ? html`
-              <label>Navigation Path</label>
+              <label>Chemin de navigation</label>
               <input
                 .value="${action.navigation_path || ""}"
                 placeholder="/lovelace/salon"
@@ -1668,7 +1987,7 @@ class NaiveFlexCardEditor extends LitElement {
           : ""}
         ${actionKey === "hold_action" && actionType !== "none"
           ? html`
-              <label>Hold Delay (ms)</label>
+              <label>Délai appui long (ms)</label>
               <input
                 type="number"
                 min="100"
@@ -1722,7 +2041,7 @@ class NaiveFlexCardEditor extends LitElement {
     const id = `group_${groups.length + 1}`
     groups.push({
       id,
-      label: `Group ${groups.length + 1}`,
+      label: `Groupe ${groups.length + 1}`,
       enabled: true,
       scroll: true,
       gap: 8,
@@ -1859,7 +2178,7 @@ class NaiveFlexCardEditor extends LitElement {
     return html`
       <div class="subsection">
         <div class="subsection-header">
-          <span>Service Data</span>
+          <span>Données de service</span>
           <button class="small-btn" @click="${() => this._addServiceDataEntry(index)}">
             + Param
           </button>
@@ -1883,12 +2202,12 @@ class NaiveFlexCardEditor extends LitElement {
                     class="small-btn danger"
                     @click="${() => this._removeServiceDataEntry(index, key)}"
                   >
-                    Remove
+                    Supprimer
                   </button>
                 </div>
               `
             )
-          : html`<div class="hint">No service data defined.</div>`}
+          : html`<div class="hint">Aucune donnée de service définie.</div>`}
       </div>
     `
   }
@@ -1899,38 +2218,38 @@ class NaiveFlexCardEditor extends LitElement {
     return html`
       <div class="button-editor">
         <div class="button-editor-header">
-          <strong>Button ${index + 1}</strong>
+          <strong>Bouton ${index + 1}</strong>
           <div class="button-editor-actions">
             <button
               class="small-btn"
               ?disabled="${index === 0}"
               @click="${() => this._moveButton(index, -1)}"
             >
-              Up
+              Monter
             </button>
             <button
               class="small-btn"
               ?disabled="${index === total - 1}"
               @click="${() => this._moveButton(index, 1)}"
             >
-              Down
+              Descendre
             </button>
             <button class="small-btn danger" @click="${() => this._removeButton(index)}">
-              Delete
+              Supprimer
             </button>
           </div>
         </div>
 
         <div class="grid-2">
           <div>
-            <label>Label</label>
+            <label>Libellé</label>
             <input
               .value="${button.label || ""}"
               @input="${(event) => this._setButtonField(index, "label", event.target.value)}"
             />
           </div>
           <div>
-            ${this._renderIconField("Icon", button.icon || "", (value) =>
+            ${this._renderIconField("Icône", button.icon || "", (value) =>
               this._setButtonField(index, "icon", value)
             )}
           </div>
@@ -1942,15 +2261,15 @@ class NaiveFlexCardEditor extends LitElement {
             .checked="${button.enabled !== false}"
             @change="${(event) => this._setButtonField(index, "enabled", event.target.checked)}"
           />
-          Enable This Button
+          Activer ce bouton
         </label>
 
-        <label>Group</label>
+        <label>Groupe</label>
         <select
           .value="${button.group_id || ""}"
           @change="${(event) => this._setButtonField(index, "group_id", event.target.value)}"
         >
-          <option value="">Main Row</option>
+          <option value="">Rangée principale</option>
           ${this._groups().map(
             (group) => html`<option value="${group.id}">${group.label || group.id}</option>`
           )}
@@ -1963,14 +2282,14 @@ class NaiveFlexCardEditor extends LitElement {
               .value="${action}"
               @change="${(event) => this._setButtonField(index, "action", event.target.value)}"
             >
-              <option value="toggle">toggle</option>
-              <option value="more-info">more-info</option>
-              <option value="call-service">call-service</option>
-              <option value="set-value">set-value</option>
+              <option value="toggle">Basculer</option>
+              <option value="more-info">Plus d'informations</option>
+              <option value="call-service">Appeler un service</option>
+              <option value="set-value">Définir une valeur</option>
             </select>
           </div>
           <div>
-            <label>Entity (optional)</label>
+            <label>Entité (optionnel)</label>
             <ha-entity-picker
               .hass="${this.hass}"
               .value="${button.entity || ""}"
@@ -1998,7 +2317,7 @@ class NaiveFlexCardEditor extends LitElement {
           ? html`
               <div class="grid-2">
                 <div>
-                  <label>Volume Value (0..1)</label>
+                  <label>Valeur volume (0..1)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -2014,7 +2333,7 @@ class NaiveFlexCardEditor extends LitElement {
                   />
                 </div>
                 <div>
-                  <label>Cover Position (0..100)</label>
+                  <label>Position volet (0..100)</label>
                   <input
                     type="number"
                     min="0"
@@ -2039,38 +2358,38 @@ class NaiveFlexCardEditor extends LitElement {
     return html`
       <div class="button-editor">
         <div class="button-editor-header">
-          <strong>Group ${index + 1}</strong>
+          <strong>Groupe ${index + 1}</strong>
           <div class="button-editor-actions">
             <button
               class="small-btn"
               ?disabled="${index === 0}"
               @click="${() => this._moveGroup(index, -1)}"
             >
-              Up
+              Monter
             </button>
             <button
               class="small-btn"
               ?disabled="${index === total - 1}"
               @click="${() => this._moveGroup(index, 1)}"
             >
-              Down
+              Descendre
             </button>
             <button class="small-btn danger" @click="${() => this._removeGroup(index)}">
-              Delete
+              Supprimer
             </button>
           </div>
         </div>
 
         <div class="grid-2">
           <div>
-            <label>Group ID</label>
+            <label>ID du groupe</label>
             <input
               .value="${group.id || ""}"
               @input="${(event) => this._setGroupField(index, "id", event.target.value)}"
             />
           </div>
           <div>
-            <label>Label</label>
+            <label>Libellé</label>
             <input
               .value="${group.label || ""}"
               @input="${(event) => this._setGroupField(index, "label", event.target.value)}"
@@ -2084,7 +2403,7 @@ class NaiveFlexCardEditor extends LitElement {
             .checked="${group.enabled !== false}"
             @change="${(event) => this._setGroupField(index, "enabled", event.target.checked)}"
           />
-          Enable This Group
+          Activer ce groupe
         </label>
 
         <label>
@@ -2093,12 +2412,12 @@ class NaiveFlexCardEditor extends LitElement {
             .checked="${group.scroll !== false}"
             @change="${(event) => this._setGroupField(index, "scroll", event.target.checked)}"
           />
-          Horizontal Scroll
+          Défilement horizontal
         </label>
 
         <div class="grid-2">
           <div>
-            <label>Gap (px)</label>
+            <label>Espacement (px)</label>
             <input
               type="number"
               .value="${String(group.gap ?? 8)}"
@@ -2107,21 +2426,21 @@ class NaiveFlexCardEditor extends LitElement {
             />
           </div>
           <div>
-            <label>Align</label>
+            <label>Alignement</label>
             <select
               .value="${group.align || "start"}"
               @change="${(event) => this._setGroupField(index, "align", event.target.value)}"
             >
-              <option value="start">start</option>
-              <option value="center">center</option>
-              <option value="end">end</option>
+              <option value="start">Début</option>
+              <option value="center">Centre</option>
+              <option value="end">Fin</option>
             </select>
           </div>
         </div>
 
         <div class="grid-2">
           <div>
-            <label>Min Button Width</label>
+            <label>Largeur min. bouton</label>
             <input
               type="number"
               .value="${String(group.min_button_width ?? 72)}"
@@ -2130,7 +2449,7 @@ class NaiveFlexCardEditor extends LitElement {
             />
           </div>
           <div>
-            <label>Max Button Width</label>
+            <label>Largeur max. bouton</label>
             <input
               type="number"
               .value="${String(group.max_button_width ?? 132)}"
@@ -2140,7 +2459,7 @@ class NaiveFlexCardEditor extends LitElement {
           </div>
         </div>
 
-        <label>Custom Button Width</label>
+        <label>Largeur personnalisée du bouton</label>
         <input
           .value="${group.button_width || ""}"
           @input="${(event) => this._setGroupField(index, "button_width", event.target.value)}"
@@ -2157,35 +2476,35 @@ class NaiveFlexCardEditor extends LitElement {
     return html`
       <div class="form">
         <details open>
-          <summary>General</summary>
+          <summary>Général</summary>
           <div class="section-content">
             <ha-entity-picker
               .hass="${this.hass}"
               .value="${this.config.entity || ""}"
-              label="Entity"
+              label="Entité"
               allow-custom-entity
               @value-changed="${(event) => this._setValue("entity", event.detail.value)}"
             ></ha-entity-picker>
 
-            <label>Control Type</label>
+            <label>Type de contrôle</label>
             <select
               .value="${this.config.control_type || "auto"}"
               @change="${(event) => this._setValue("control_type", event.target.value)}"
             >
-              <option value="auto">auto</option>
-              <option value="light">light</option>
-              <option value="button">button</option>
-              <option value="volume">volume</option>
-              <option value="cover">cover</option>
+              <option value="auto">Automatique</option>
+              <option value="light">Lumière</option>
+              <option value="button">Bouton / action</option>
+              <option value="volume">Volume</option>
+              <option value="cover">Volet</option>
             </select>
 
-            <label>Name</label>
+            <label>Nom</label>
             <input
               .value="${this.config.name || ""}"
               @input="${(event) => this._onInput("name", event)}"
             />
 
-            ${this._renderIconField("Icon", this.config.icon || "", (value) => {
+            ${this._renderIconField("Icône", this.config.icon || "", (value) => {
               if (value === "") {
                 this._removeValue("icon")
                 return
@@ -2199,7 +2518,7 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${this.config.show_name !== false}"
                 @change="${(event) => this._onBoolean("show_name", event)}"
               />
-              Show Name
+              Afficher le nom
             </label>
 
             <label>
@@ -2208,7 +2527,7 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${this.config.show_state !== false}"
                 @change="${(event) => this._onBoolean("show_state", event)}"
               />
-              Show State
+              Afficher l'état
             </label>
           </div>
         </details>
@@ -2222,43 +2541,43 @@ class NaiveFlexCardEditor extends LitElement {
         </details>
 
         <details>
-          <summary>Style</summary>
+          <summary>Styles</summary>
           <div class="section-content">
-            <label>Preset Style</label>
+            <label>Preset visuel</label>
             <select
               .value="${this.config.style.preset}"
               @change="${(event) => this._setValue("style.preset", event.target.value)}"
             >
-              <option value="modern">modern</option>
-              <option value="minimal">minimal</option>
-              <option value="outline">outline</option>
-              <option value="soft">soft</option>
-              <option value="navbar_popup">navbar_popup</option>
+              <option value="modern">Moderne</option>
+              <option value="minimal">Minimal</option>
+              <option value="outline">Contour</option>
+              <option value="soft">Doux</option>
+              <option value="navbar_popup">Navbar popup</option>
             </select>
 
-            <label>Shape</label>
+            <label>Forme</label>
             <select
               .value="${this.config.style.shape}"
               @change="${(event) => this._setValue("style.shape", event.target.value)}"
             >
-              <option value="rounded">rounded</option>
-              <option value="square">square</option>
-              <option value="pill">pill</option>
+              <option value="rounded">Arrondi</option>
+              <option value="square">Carré</option>
+              <option value="pill">Pilule</option>
             </select>
 
-            <label>Appearance</label>
+            <label>Apparence</label>
             <select
               .value="${this.config.style.appearance}"
               @change="${(event) => this._setValue("style.appearance", event.target.value)}"
             >
-              <option value="solid">solid</option>
-              <option value="glass">glass</option>
-              <option value="outline">outline</option>
+              <option value="solid">Plein</option>
+              <option value="glass">Verre</option>
+              <option value="outline">Contour</option>
             </select>
 
-            ${this._renderColorField("Active Color", "style.active_color", "#00aeef")}
-            ${this._renderColorField("Background Color", "style.background_color", "#1f2937")}
-            ${this._renderColorField("Text Color", "style.text_color", "#f9fafb")}
+            ${this._renderColorField("Couleur active", "style.active_color", "#00aeef")}
+            ${this._renderColorField("Couleur de fond", "style.background_color", "#1f2937")}
+            ${this._renderColorField("Couleur du texte", "style.text_color", "#f9fafb")}
 
             <label>
               <input
@@ -2266,13 +2585,13 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.style.auto_text_contrast}"
                 @change="${(event) => this._onBoolean("style.auto_text_contrast", event)}"
               />
-              Auto Text Contrast (adapte le texte selon le fond)
+              Contraste automatique du texte
             </label>
           </div>
         </details>
 
         <details>
-          <summary>Type Options</summary>
+          <summary>Réglages</summary>
           <div class="section-content">
             <label>
               <input
@@ -2280,10 +2599,10 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.light_controls.show_brightness}"
                 @change="${(event) => this._onBoolean("light_controls.show_brightness", event)}"
               />
-              Light: Show Brightness Slider
+              Lumière : afficher le slider de luminosité
             </label>
 
-            <label>Light Brightness Step</label>
+            <label>Pas luminosité</label>
             <input
               type="number"
               min="1"
@@ -2298,10 +2617,10 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.light_controls.show_color_temp}"
                 @change="${(event) => this._onBoolean("light_controls.show_color_temp", event)}"
               />
-              Light: Show Color Temperature Controls
+              Lumière : afficher les contrôles de température
             </label>
 
-            <label>Light Color Temperature Step</label>
+            <label>Pas température couleur</label>
             <input
               type="number"
               min="1"
@@ -2316,10 +2635,10 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.volume_controls.show_slider}"
                 @change="${(event) => this._onBoolean("volume_controls.show_slider", event)}"
               />
-              Volume: Show Slider
+              Volume : afficher le slider
             </label>
 
-            <label>Volume Step (0..1)</label>
+            <label>Pas volume (0..1)</label>
             <input
               type="number"
               step="0.01"
@@ -2335,13 +2654,59 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.cover_controls.show_stop}"
                 @change="${(event) => this._onBoolean("cover_controls.show_stop", event)}"
               />
-              Cover: Show Stop Button
+              Volet : afficher le bouton arrêter
             </label>
           </div>
         </details>
 
         <details>
-          <summary>Horizontal Buttons Row</summary>
+          <summary>Textes</summary>
+          <div class="section-content">
+            <div class="grid-2">
+              ${this._renderLabelTextField("Action par défaut", "action")}
+              ${this._renderLabelTextField("Basculer", "toggle")}
+              ${this._renderLabelTextField("Exécuter", "run")}
+              ${this._renderLabelTextField("Indisponible", "unavailable")}
+            </div>
+            <div class="grid-2">
+              ${this._renderLabelTextField("Badge lumière", "badge_light")}
+              ${this._renderLabelTextField("Badge bouton", "badge_button")}
+              ${this._renderLabelTextField("Badge volume", "badge_volume")}
+              ${this._renderLabelTextField("Badge volet", "badge_cover")}
+            </div>
+            <div class="grid-2">
+              ${this._renderLabelTextField("Luminosité", "brightness")}
+              ${this._renderLabelTextField("- Luminosité", "brightness_down")}
+              ${this._renderLabelTextField("+ Luminosité", "brightness_up")}
+              ${this._renderLabelTextField("Plus froid", "cooler")}
+              ${this._renderLabelTextField("Plus chaud", "warmer")}
+              ${this._renderLabelTextField("Muet", "mute")}
+              ${this._renderLabelTextField("Volume", "volume")}
+              ${this._renderLabelTextField("- Volume", "volume_down")}
+              ${this._renderLabelTextField("+ Volume", "volume_up")}
+              ${this._renderLabelTextField("Ouvrir", "open")}
+              ${this._renderLabelTextField("Arrêter", "stop")}
+              ${this._renderLabelTextField("Fermer", "close")}
+              ${this._renderLabelTextField("Position", "position")}
+            </div>
+            <div class="grid-2">
+              ${this._renderLabelTextField("Allumé", "on")}
+              ${this._renderLabelTextField("Éteint", "off")}
+              ${this._renderLabelTextField("Ouvert", "open_state")}
+              ${this._renderLabelTextField("Fermé", "closed_state")}
+              ${this._renderLabelTextField("Ouverture", "opening")}
+              ${this._renderLabelTextField("Fermeture", "closing")}
+              ${this._renderLabelTextField("Lecture", "playing")}
+              ${this._renderLabelTextField("Pause", "paused")}
+              ${this._renderLabelTextField("Inactif", "idle")}
+              ${this._renderLabelTextField("Veille", "standby")}
+              ${this._renderLabelTextField("Inconnu", "unknown")}
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Boutons horizontaux</summary>
           <div class="section-content">
             <label>
               <input
@@ -2349,7 +2714,7 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.button_row.enabled}"
                 @change="${(event) => this._onBoolean("button_row.enabled", event)}"
               />
-              Enable Horizontal Buttons Row
+              Activer la rangée de boutons
             </label>
 
             <label>
@@ -2358,63 +2723,63 @@ class NaiveFlexCardEditor extends LitElement {
                 .checked="${!!this.config.button_row.scroll}"
                 @change="${(event) => this._onBoolean("button_row.scroll", event)}"
               />
-              Enable Horizontal Scroll
+              Activer le défilement horizontal
             </label>
 
-            <label>Row Gap (px)</label>
+            <label>Espacement rangée (px)</label>
             <input
               type="number"
               .value="${String(this.config.button_row.gap || 8)}"
               @input="${(event) => this._onNumber("button_row.gap", event)}"
             />
 
-            <label>Min Button Width (px)</label>
+            <label>Largeur min. bouton (px)</label>
             <input
               type="number"
               .value="${String(this.config.button_row.min_button_width || 72)}"
               @input="${(event) => this._onNumber("button_row.min_button_width", event)}"
             />
 
-            <label>Max Button Width (px)</label>
+            <label>Largeur max. bouton (px)</label>
             <input
               type="number"
               .value="${String(this.config.button_row.max_button_width || 140)}"
               @input="${(event) => this._onNumber("button_row.max_button_width", event)}"
             />
 
-            <label>Custom Button Width (optional, e.g. 110px / 30%)</label>
+            <label>Largeur personnalisée (optionnel, ex: 110px / 30%)</label>
             <input
               .value="${this.config.button_row.button_width || ""}"
               @input="${(event) => this._onInput("button_row.button_width", event)}"
             />
 
-            <label>Row Align</label>
+            <label>Alignement de rangée</label>
             <select
               .value="${this.config.button_row.align || "start"}"
               @change="${(event) => this._setValue("button_row.align", event.target.value)}"
             >
-              <option value="start">start</option>
-              <option value="center">center</option>
-              <option value="end">end</option>
+              <option value="start">Début</option>
+              <option value="center">Centre</option>
+              <option value="end">Fin</option>
             </select>
 
             <div class="button-list-header">
-              <h3>Groups</h3>
-              <button class="small-btn" @click="${this._addGroup}">+ Add Group</button>
+              <h3>Groupes</h3>
+              <button class="small-btn" @click="${this._addGroup}">+ Ajouter un groupe</button>
             </div>
             ${groups.length
               ? groups.map((group, index) => this._renderGroupEditor(group, index, groups.length))
-              : html`<div class="hint">No group configured. Buttons stay in main row.</div>`}
+              : html`<div class="hint">Aucun groupe configuré. Les boutons restent dans la rangée principale.</div>`}
 
             <div class="button-list-header">
-              <h3>Buttons</h3>
-              <button class="small-btn" @click="${this._addButton}">+ Add Button</button>
+              <h3>Boutons</h3>
+              <button class="small-btn" @click="${this._addButton}">+ Ajouter un bouton</button>
             </div>
             ${buttons.length
               ? buttons.map((button, index) =>
                   this._renderButtonEditor(button, index, buttons.length)
                 )
-              : html`<div class="hint">No buttons configured yet.</div>`}
+              : html`<div class="hint">Aucun bouton configuré pour le moment.</div>`}
           </div>
         </details>
       </div>
@@ -2617,6 +2982,12 @@ window.customCards.push({
   type: "naive-flex-card",
   name: "Naive Flex Card",
   description:
-    "Universal configurable card for light/button/volume/cover with style presets and horizontal scroll button row.",
+    "Carte universelle configurable pour lumière, bouton, volume et volet avec styles et boutons rapides.",
   preview: true,
 })
+
+console.info(
+  "%c NAIVE-FLEX-CARD %c v0.3.1 ",
+  "color: #fff; background: #00aeef; font-weight: bold; padding: 2px 6px; border-radius: 4px 0 0 4px;",
+  "color: #00aeef; background: #111827; font-weight: bold; padding: 2px 6px; border-radius: 0 4px 4px 0;"
+)

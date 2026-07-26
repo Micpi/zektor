@@ -103,7 +103,7 @@ class NadClient:
                     import serial_asyncio  # type: ignore[import-not-found]
                 except ImportError as exc:
                     raise NadConnectionError(
-                        "pyserial-asyncio is required for RS-232 connections"
+                        "pyserial-asyncio-fast is required for RS-232 connections"
                     ) from exc
                 self._reader, self._writer = await asyncio.wait_for(
                     serial_asyncio.open_serial_connection(
@@ -187,6 +187,21 @@ class NadClient:
                 _LOGGER.debug("NAD query failed for %s: %s", variable, exc)
         return self.state
 
+    async def scan_many(
+        self,
+        variables: list[str],
+        command_delay: float = 0.04,
+        settle_time: float = 1.0,
+    ) -> dict[str, str]:
+        """Send many query commands and let the listener collect responses."""
+        await self._ensure_connected()
+        for variable in variables:
+            await self._send(f"{variable}?")
+            if command_delay > 0:
+                await asyncio.sleep(command_delay)
+        await asyncio.sleep(settle_time)
+        return self.state
+
     async def _ensure_connected(self) -> None:
         if not self.is_connected:
             await self.connect()
@@ -203,10 +218,7 @@ class NadClient:
     async def _listen(self) -> None:
         while self._reader is not None:
             try:
-                raw = await self._reader.readline()
-                if not raw:
-                    raise NadConnectionError("Connection closed")
-                line = raw.decode("ascii", errors="ignore").strip()
+                line = await self._read_line()
                 if line:
                     self._handle_line(line)
             except asyncio.CancelledError:
@@ -217,6 +229,22 @@ class NadClient:
                 self._writer = None
                 self._fail_pending(exc)
                 break
+
+    async def _read_line(self) -> str:
+        """Read one NAD response terminated by CR, LF, or CRLF."""
+        if self._reader is None:
+            raise NadConnectionError("Not connected")
+
+        buffer = bytearray()
+        while True:
+            raw = await self._reader.read(1)
+            if not raw:
+                raise NadConnectionError("Connection closed")
+            if raw in (b"\r", b"\n"):
+                if buffer:
+                    return buffer.decode("ascii", errors="ignore").strip()
+                continue
+            buffer.extend(raw)
 
     def _handle_line(self, line: str) -> None:
         _LOGGER.debug("NAD RX: %s", line)

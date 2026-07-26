@@ -17,9 +17,12 @@ Combinez image, capteurs et commandes dans un composant lisible, mobile-first et
 
 ## ✨ Points forts
 
+- ajout Lovelace vierge: aucun salon/cuisine/exemple n'est injecte par defaut
 - prise en charge native des zones Home Assistant
 - editeur graphique integre au standard du workspace (`General`, `Actions`, `Styles`, `Defaults`)
-- affichage de capteurs, toggles et liste d'entites secondaires
+- affichage optimise des capteurs, alertes, toggles et entites secondaires
+- options modernes de l'Area card: `display_type`, `camera_view`, `aspect_ratio`, `color`, `sensor_classes`, `alert_classes`, `features_position`
+- support `features: [{ type: area-controls }]` avec filtres `controls`
 - actions avances: `tap_action`, `hold_action`, `double_tap_action` pour la carte
 - actions par defaut pour les entites en `hold` et `double tap`
 - filtres de domaines, tri et limitation du volume d'entites
@@ -41,11 +44,20 @@ resources:
 
 Copiez ensuite alpha-area-card.js dans www puis rechargez le dashboard.
 
-## 🧪 Utilisation minimale
+## 🧪 Ajout vierge
+
+Depuis le picker Lovelace, la carte est ajoutee sans configuration exemple:
 
 ```yaml
 type: custom:alpha-area-card
-title: Salon
+```
+
+Selectionnez ensuite une zone ou ajoutez les options voulues depuis l'editeur.
+
+## 🧪 Utilisation minimale configuree
+
+```yaml
+type: custom:alpha-area-card
 area: salon
 ```
 
@@ -56,16 +68,25 @@ type: custom:alpha-area-card
 title: Salon
 area: salon
 hide_unavailable: true
-darken_image: 0.2
-shadow: true
-entities:
-  - entity: light.salon
-  - entity: climate.salon
-  - entity: sensor.salon_temperature
-    prefix: Temp
-styles:
-  preset: glass
-  appearance: transparent
+display_type: camera
+camera_entity: camera.salon
+camera_view: auto
+aspect_ratio: 16:9
+color: primary
+sensor_classes:
+  - temperature
+  - humidity
+alert_classes:
+  - motion
+  - moisture
+features:
+  - type: area-controls
+    controls:
+      - light
+      - fan
+      - switch
+      - entity_id: light.salon_lampe
+features_position: inline
 tap_action:
   action: more-info
 ```
@@ -74,6 +95,11 @@ tap_action:
 
 - title: titre affiche sur la carte
 - area: identifiant de zone Home Assistant
+- display_type: rendu `picture`, `camera`, `icon` ou `compact`
+- camera_entity: camera forcee pour le mode `camera` (sinon premiere camera de la zone)
+- camera_view: conserve la syntaxe HA (`auto` ou `live`); le rendu custom utilise le snapshot `camera_proxy`
+- aspect_ratio: ratio stable (`16:9`, `16x9`, `56.25%`, etc.)
+- color: token Home Assistant ou couleur hex pour l'accent
 - auto_area_entities: auto-remplissage depuis la zone quand la liste d'entites est vide
 - entities: entites secondaires affichees dans la carte
 - hide_unavailable: masque les entites indisponibles
@@ -84,6 +110,11 @@ tap_action:
 - entity_double_tap_action: action par defaut des entites au double-clic / double tap
 - include_domains: liste de domaines a inclure (ex: light,switch)
 - exclude_domains: liste de domaines a exclure (ex: sensor,binary_sensor)
+- exclude_entities: entites a exclure des capteurs, alertes et controles
+- sensor_classes: classes de capteurs a synthetiser depuis la zone
+- alert_classes: classes de binary sensors a afficher quand elles sont actives
+- features: support de `area-controls` et de ses `controls`
+- features_position: `bottom` ou `inline`
 - entity_sort: tri des entites (`none`, `name`, `domain`)
 - max_entities: limite le nombre d'entites affichees (`0` = illimite)
 - styles: apparence visuelle et variantes de presentation

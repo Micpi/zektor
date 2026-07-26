@@ -24,18 +24,72 @@ const ACTION_OPTIONS = [
   "fire-dom-event",
 ]
 
+const DISPLAY_TYPES = ["compact", "icon", "picture", "camera"]
+const FEATURE_POSITIONS = ["bottom", "inline"]
+const DEFAULT_SENSOR_CLASSES = ["temperature", "humidity"]
+const DEFAULT_ALERT_CLASSES = ["moisture", "motion"]
+const SUM_SENSOR_CLASSES = new Set(["energy", "gas", "monetary", "power", "volume", "water"])
+const AREA_CONTROL_FEATURE_TYPES = new Set(["area-controls", "area_controls"])
+const COLOR_TOKENS = {
+  primary: "var(--primary-color, #03A9F4)",
+  accent: "var(--accent-color, var(--primary-color, #03A9F4))",
+  disabled: "var(--disabled-color, #BDBDBD)",
+  red: "var(--red-color, #F44336)",
+  pink: "var(--pink-color, #E91E63)",
+  purple: "var(--purple-color, #9C27B0)",
+  "deep-purple": "var(--deep-purple-color, #673AB7)",
+  indigo: "var(--indigo-color, #3F51B5)",
+  blue: "var(--blue-color, #2196F3)",
+  "light-blue": "var(--light-blue-color, #03A9F4)",
+  cyan: "var(--cyan-color, #00BCD4)",
+  teal: "var(--teal-color, #009688)",
+  green: "var(--green-color, #4CAF50)",
+  "light-green": "var(--light-green-color, #8BC34A)",
+  lime: "var(--lime-color, #CDDC39)",
+  yellow: "var(--yellow-color, #FFEB3B)",
+  amber: "var(--amber-color, #FFC107)",
+  orange: "var(--orange-color, #FF9800)",
+  "deep-orange": "var(--deep-orange-color, #FF5722)",
+  brown: "var(--brown-color, #795548)",
+  grey: "var(--grey-color, #9E9E9E)",
+  "blue-grey": "var(--blue-grey-color, #607D8B)",
+  black: "#000000",
+  white: "#FFFFFF",
+}
+
+const STYLE_DEFAULTS = {
+  button_icon_color_on: "var(--primary-color, #00AEEF)",
+  button_icon_color_off: "var(--secondary-text-color, #9CA3AF)",
+  badge_text_color: "var(--text-primary-color, #FFFFFF)",
+  button_light_color_on: "var(--state-light-active-color, var(--primary-color, #00AEEF))",
+  badge_background: "var(--primary-color, #00AEEF)",
+  title_font_weight: "600",
+  title_text_transform: "none",
+  title_text_shadow: "0 1px 3px rgba(0, 0, 0, 0.55)",
+  image_blur: "0px",
+}
+
 const DEFAULT_CONFIG = {
-  title: "Cuisine",
-  area: "cuisine",
+  title: "",
+  area: "",
+  display_type: "picture",
+  camera_view: "auto",
+  camera_entity: "",
+  aspect_ratio: "16:9",
+  color: "",
   auto_area_entities: true,
   hide_unavailable: false,
   entity_sort: "none",
   include_domains: [],
   exclude_domains: [],
+  exclude_entities: [],
+  sensor_classes: [...DEFAULT_SENSOR_CLASSES],
+  alert_classes: [...DEFAULT_ALERT_CLASSES],
+  features: [],
+  features_position: "bottom",
   max_entities: 0,
   tap_action: {
-    action: "navigate",
-    navigation_path: "/lovelace/cuisine",
+    action: "none",
   },
   hold_action: {
     action: "none",
@@ -49,47 +103,31 @@ const DEFAULT_CONFIG = {
   entity_double_tap_action: {
     action: "none",
   },
-  entities: [
-    "light.cuisine",
-    "media_player.sam_cuisine",
-    "sensor.maison_zone_etage_circuit_0_current_temperature",
-  ],
-  styles: {
-    button_icon_color_on: "#c7a975",
-    button_icon_color_off: "#f0f0f0",
-    badge_text_color: "#0667c1",
-    button_light_color_on: "#c7a975",
-    badge_background: "#e8f359",
-    title_font_weight: "300",
-    title_text_transform: "capitalize",
-    title_text_shadow: "2px 2px 1px black",
-    image_blur: "2px",
-  },
+  entities: [],
+  styles: { ...STYLE_DEFAULTS },
   darken_image: true,
   shadow: false,
   force_dialog: false,
   state_color: false,
-  card_mod: {
-    style:
-      "ha-card { height: 180px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }",
-  },
-}
-
-const STYLE_DEFAULTS = {
-  button_icon_color_on: "#c7a975",
-  button_icon_color_off: "#f0f0f0",
-  badge_text_color: "#0667c1",
-  button_light_color_on: "#c7a975",
-  badge_background: "#e8f359",
-  title_font_weight: "300",
-  title_text_transform: "capitalize",
-  title_text_shadow: "2px 2px 1px black",
-  image_blur: "2px",
 }
 
 const safeText = (value) => (value === null || value === undefined ? "" : String(value))
 
 const deepClone = (value) => JSON.parse(JSON.stringify(value))
+
+const escapeHtml = (value) =>
+  safeText(value).replace(/[&<>"']/g, (char) => {
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }
+    return map[char]
+  })
+
+const escapeAttribute = escapeHtml
 
 const parseEntityConfig = (rawEntity) => {
   if (typeof rawEntity === "string") {
@@ -112,6 +150,43 @@ const parseDomainsText = (text) =>
     .split(/\r?\n|,|;/)
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean)
+
+const parseStringList = (text) =>
+  safeText(text)
+    .split(/\r?\n|,|;/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+const normalizeStringList = (value, fallback = [], lowerCase = false) => {
+  if (value === undefined || value === null || value === "") {
+    return [...fallback]
+  }
+
+  const list = Array.isArray(value) ? value : parseStringList(value)
+  const normalized = list.map((item) => {
+    const text = safeText(item).trim()
+    return lowerCase ? text.toLowerCase() : text
+  })
+  return normalized.filter(Boolean)
+}
+
+const normalizeOptionalStringList = (value, lowerCase = false) => {
+  const list = Array.isArray(value) ? value : parseStringList(value)
+  return list
+    .map((item) => {
+      const text = safeText(item).trim()
+      return lowerCase ? text.toLowerCase() : text
+    })
+    .filter(Boolean)
+}
+
+const normalizeSelect = (value, allowed, fallback) =>
+  allowed.includes(value) ? value : fallback
+
+const resolveColorToken = (value, fallback = "") => {
+  const color = safeText(value || fallback).trim()
+  return COLOR_TOKENS[color] || color
+}
 
 const normalizeActionConfig = (actionConfig, fallbackAction = "more-info") => {
   if (!actionConfig || typeof actionConfig !== "object") {
@@ -143,8 +218,21 @@ const formatNumber = (hass, value, precision) => {
   }).format(numeric)
 }
 
-const getEntityName = (entityState, fallbackEntityId) =>
-  entityState?.attributes?.friendly_name || fallbackEntityId
+const getEntityName = (hass, entityState, fallbackEntityId, entityConfig = {}) => {
+  if (entityConfig.name) {
+    return safeText(entityConfig.name)
+  }
+
+  if (hass?.formatEntityName && entityState) {
+    try {
+      return hass.formatEntityName(entityState)
+    } catch (_error) {
+      // Older HA builds or custom frontend bundles may expose a partial formatter.
+    }
+  }
+
+  return entityState?.attributes?.friendly_name || fallbackEntityId
+}
 
 const getEntityIcon = (entityState, explicitIcon) =>
   explicitIcon || entityState?.attributes?.icon || "mdi:help-circle"
@@ -202,16 +290,9 @@ const performAction = (node, hass, entityConfig, actionConfig) => {
     if (!entityConfig?.entity) {
       return
     }
-    const [domain] = entityConfig.entity.split(".")
-    if (domain) {
-      hass.callService(
-        domain === "group" ? "homeassistant" : domain,
-        domain === "lock" ? "toggle" : "toggle",
-        {
-          entity_id: entityConfig.entity,
-        }
-      )
-    }
+    hass.callService("homeassistant", "toggle", {
+      entity_id: entityConfig.entity,
+    })
     return
   }
 
@@ -267,17 +348,37 @@ const shouldUseStateColor = (entityConfig, cardConfig) => {
 }
 
 const getDisplayState = (hass, entityState, entityRegistryItem, entityConfig) => {
+  if (entityConfig.display_state !== undefined) {
+    return safeText(entityConfig.display_state)
+  }
+
   if (!entityState) {
     return ""
   }
 
   if (entityConfig.attribute) {
     const raw = entityState.attributes?.[entityConfig.attribute]
-    return `${safeText(entityConfig.prefix)}${safeText(raw)}${safeText(entityConfig.suffix)}`.trim()
+    let formatted = raw
+    if (hass?.formatEntityAttributeValue) {
+      try {
+        formatted = hass.formatEntityAttributeValue(entityState, entityConfig.attribute, raw)
+      } catch (_error) {
+        formatted = raw
+      }
+    }
+    return `${safeText(entityConfig.prefix)}${safeText(formatted)}${safeText(entityConfig.suffix)}`.trim()
   }
 
   if (UNAVAILABLE_STATES.has(entityState.state)) {
     return entityState.state
+  }
+
+  if (hass?.formatEntityState) {
+    try {
+      return hass.formatEntityState(entityState)
+    } catch (_error) {
+      // Fall back to local formatting below.
+    }
   }
 
   const unit = safeText(entityState.attributes?.unit_of_measurement)
@@ -300,15 +401,15 @@ class AlphaAreaCard extends HTMLElement {
   }
 
   static getStubConfig() {
-    return deepClone(DEFAULT_CONFIG)
+    return {}
   }
 
   static getGridOptions() {
     return {
-      columns: 12,
-      min_columns: 6,
+      columns: 6,
+      min_columns: 3,
       rows: 3,
-      min_rows: 3,
+      min_rows: 2,
     }
   }
 
@@ -323,9 +424,13 @@ class AlphaAreaCard extends HTMLElement {
     this.config = deepClone(DEFAULT_CONFIG)
     this._renderModel = {
       area: null,
+      areaEntityIds: [],
       entitiesDialog: [],
       entitiesToggle: [],
       entitiesSensors: [],
+      entitiesAlerts: [],
+      sensorSummaries: [],
+      cameraEntity: "",
     }
     this._lastStateSnapshot = ""
     this._cardClickTimer = null
@@ -380,6 +485,22 @@ class AlphaAreaCard extends HTMLElement {
       ? merged.exclude_domains.map((domain) => safeText(domain).toLowerCase()).filter(Boolean)
       : parseDomainsText(merged.exclude_domains)
 
+    merged.exclude_entities = normalizeOptionalStringList(merged.exclude_entities)
+    merged.sensor_classes = normalizeStringList(
+      merged.sensor_classes,
+      DEFAULT_SENSOR_CLASSES,
+      true
+    )
+    merged.alert_classes = normalizeStringList(merged.alert_classes, DEFAULT_ALERT_CLASSES, true)
+    merged.display_type = normalizeSelect(merged.display_type, DISPLAY_TYPES, "picture")
+    merged.features_position = normalizeSelect(
+      merged.features_position,
+      FEATURE_POSITIONS,
+      "bottom"
+    )
+    merged.features = Array.isArray(merged.features) ? merged.features.filter(Boolean) : []
+    merged.camera_entity = safeText(merged.camera_entity || merged.camera_image)
+
     this.config = merged
     this._computeRenderModel()
     this._render()
@@ -410,7 +531,17 @@ class AlphaAreaCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 3
+    return this.config?.display_type === "compact" ? 2 : 3
+  }
+
+  getGridOptions() {
+    const compact = this.config?.display_type === "compact"
+    return {
+      columns: compact ? 6 : 6,
+      min_columns: 3,
+      rows: compact ? 2 : 3,
+      min_rows: 2,
+    }
   }
 
   _shouldRefresh(previousHass, nextHass) {
@@ -426,10 +557,24 @@ class AlphaAreaCard extends HTMLElement {
       ...this._renderModel.entitiesDialog,
       ...this._renderModel.entitiesToggle,
       ...this._renderModel.entitiesSensors,
+      ...this._renderModel.entitiesAlerts,
+      ...this._renderModel.sensorSummaries,
     ]
 
+    if (this._renderModel.cameraEntity) {
+      tracked.push({ entity: this._renderModel.cameraEntity })
+    }
+
+    const trackedEntityIds = new Set()
     for (const entityConfig of tracked) {
-      const entityId = entityConfig.entity
+      if (Array.isArray(entityConfig.source_entities)) {
+        entityConfig.source_entities.forEach((entityId) => trackedEntityIds.add(entityId))
+      } else if (entityConfig.entity) {
+        trackedEntityIds.add(entityConfig.entity)
+      }
+    }
+
+    for (const entityId of trackedEntityIds) {
       if (previousHass.states[entityId] !== nextHass.states[entityId]) {
         return true
       }
@@ -437,6 +582,22 @@ class AlphaAreaCard extends HTMLElement {
 
     const areaId = this.config.area
     if (areaId && previousHass.areas?.[areaId] !== nextHass.areas?.[areaId]) {
+      return true
+    }
+
+    const needsRegistryRefresh =
+      this.config.auto_area_entities ||
+      this._hasAreaControlsFeature() ||
+      this.config.display_type === "camera" ||
+      !Array.isArray(this.config.entities) ||
+      this.config.entities.length === 0
+
+    if (
+      needsRegistryRefresh &&
+      (previousHass.entities !== nextHass.entities ||
+        previousHass.devices !== nextHass.devices ||
+        previousHass.areas !== nextHass.areas)
+    ) {
       return true
     }
 
@@ -451,21 +612,35 @@ class AlphaAreaCard extends HTMLElement {
 
     const areaId = this.config.area
     const area = areaId ? hass.areas?.[areaId] || null : null
+    const areaEntityIds = areaId ? resolveAreaEntities(hass, areaId) : []
+    const hasExplicitEntities = Array.isArray(this.config.entities) && this.config.entities.length
 
+    const shouldUseAreaEntities = this.config.auto_area_entities || this._hasAreaControlsFeature()
     const configured =
-      Array.isArray(this.config.entities) && this.config.entities.length
+      hasExplicitEntities
         ? this.config.entities
-        : this.config.auto_area_entities
-          ? resolveAreaEntities(hass, areaId)
+        : shouldUseAreaEntities
+          ? areaEntityIds
           : []
 
-    const includeDomains = new Set((this.config.include_domains || []).map((domain) => safeText(domain)))
-    const excludeDomains = new Set((this.config.exclude_domains || []).map((domain) => safeText(domain)))
+    const includeDomains = new Set(
+      (this.config.include_domains || []).map((domain) => safeText(domain))
+    )
+    const excludeDomains = new Set(
+      (this.config.exclude_domains || []).map((domain) => safeText(domain))
+    )
+    const excludedEntities = new Set(this.config.exclude_entities || [])
+    const sensorClasses = new Set(this.config.sensor_classes || [])
+    const alertClasses = new Set(this.config.alert_classes || [])
+    const autoAreaSource = !hasExplicitEntities && Boolean(shouldUseAreaEntities)
+    const hasAreaControlsFeature = this._hasAreaControlsFeature()
+    const areaControls = this._getAreaControls()
 
     let parsedEntities = configured
       .map(parseEntityConfig)
       .filter(Boolean)
       .filter((item) => item.entity)
+      .filter((item) => !excludedEntities.has(item.entity))
 
     if (includeDomains.size) {
       parsedEntities = parsedEntities.filter((item) => {
@@ -483,8 +658,18 @@ class AlphaAreaCard extends HTMLElement {
 
     if (this.config.entity_sort === "name") {
       parsedEntities.sort((left, right) => {
-        const leftName = getEntityName(hass.states?.[left.entity], left.entity).toLowerCase()
-        const rightName = getEntityName(hass.states?.[right.entity], right.entity).toLowerCase()
+        const leftName = getEntityName(
+          hass,
+          hass.states?.[left.entity],
+          left.entity,
+          left
+        ).toLowerCase()
+        const rightName = getEntityName(
+          hass,
+          hass.states?.[right.entity],
+          right.entity,
+          right
+        ).toLowerCase()
         return leftName.localeCompare(rightName)
       })
     }
@@ -508,16 +693,52 @@ class AlphaAreaCard extends HTMLElement {
     const entitiesDialog = []
     const entitiesToggle = []
     const entitiesSensors = []
+    const entitiesAlerts = []
+    const sensorCandidates = []
 
     for (const entityConfig of parsedEntities) {
       const domain = entityConfig.entity.split(".")[0]
+      const entityState = hass.states?.[entityConfig.entity]
+      const deviceClass = safeText(entityState?.attributes?.device_class).toLowerCase()
+
+      if (autoAreaSource && domain === "camera" && this.config.display_type === "camera") {
+        continue
+      }
+
+      if (autoAreaSource && domain === "binary_sensor" && alertClasses.has(deviceClass)) {
+        if (entityState?.state === "on") {
+          entitiesAlerts.push(entityConfig)
+        }
+        continue
+      }
+
+      if (autoAreaSource && domain === "sensor" && sensorClasses.has(deviceClass)) {
+        sensorCandidates.push(entityConfig)
+        continue
+      }
+
       if (SENSOR_DOMAINS.has(domain) || entityConfig.attribute) {
         entitiesSensors.push(entityConfig)
         continue
       }
 
-      if (!this.config.force_dialog && TOGGLE_DOMAINS.has(domain)) {
-        entitiesToggle.push(entityConfig)
+      const areaControlConfig = hasAreaControlsFeature
+        ? this._getAreaControlConfig(entityConfig, domain, areaControls)
+        : null
+
+      if (
+        !this.config.force_dialog &&
+        ((!hasAreaControlsFeature && TOGGLE_DOMAINS.has(domain)) || areaControlConfig)
+      ) {
+        entitiesToggle.push(
+          areaControlConfig && typeof areaControlConfig === "object"
+            ? {
+                ...entityConfig,
+                ...areaControlConfig,
+                entity: areaControlConfig.entity_id || entityConfig.entity,
+              }
+            : entityConfig
+        )
         continue
       }
 
@@ -526,15 +747,178 @@ class AlphaAreaCard extends HTMLElement {
 
     this._renderModel = {
       area,
+      areaEntityIds,
       entitiesDialog,
       entitiesToggle,
       entitiesSensors,
+      entitiesAlerts,
+      sensorSummaries: this._buildSensorSummaries(sensorCandidates),
+      cameraEntity: this._resolveCameraEntity(areaEntityIds, parsedEntities),
     }
+  }
+
+  _hasAreaControlsFeature() {
+    return (this.config.features || []).some((feature) => {
+      const type = typeof feature === "string" ? feature : feature?.type
+      return AREA_CONTROL_FEATURE_TYPES.has(safeText(type))
+    })
+  }
+
+  _getAreaControls() {
+    const feature = (this.config.features || []).find((item) => {
+      const type = typeof item === "string" ? item : item?.type
+      return AREA_CONTROL_FEATURE_TYPES.has(safeText(type))
+    })
+    return Array.isArray(feature?.controls) ? feature.controls : []
+  }
+
+  _getAreaControlConfig(entityConfig, domain, controls) {
+    if (!controls.length) {
+      return TOGGLE_DOMAINS.has(domain)
+    }
+
+    for (const control of controls) {
+      if (typeof control === "string" && control === domain) {
+        return true
+      }
+
+      if (control?.entity_id === entityConfig.entity) {
+        return {
+          ...control,
+          entity: control.entity_id,
+        }
+      }
+    }
+
+    return false
+  }
+
+  _resolveCameraEntity(areaEntityIds, parsedEntities) {
+    const configured = safeText(this.config.camera_entity || this.config.camera_image)
+    if (configured.startsWith("camera.")) {
+      return configured
+    }
+
+    const explicitCamera = parsedEntities.find((entityConfig) =>
+      safeText(entityConfig.entity).startsWith("camera.")
+    )
+    if (explicitCamera) {
+      return explicitCamera.entity
+    }
+
+    return areaEntityIds.find((entityId) => entityId.startsWith("camera.")) || ""
+  }
+
+  _buildSensorSummaries(sensorCandidates) {
+    const groups = new Map()
+
+    for (const entityConfig of sensorCandidates) {
+      const entityState = this._hass?.states?.[entityConfig.entity]
+      if (!entityState) {
+        continue
+      }
+
+      if (UNAVAILABLE_STATES.has(entityState.state)) {
+        continue
+      }
+
+      const numeric = Number(entityState.state)
+      if (!Number.isFinite(numeric)) {
+        continue
+      }
+
+      const deviceClass = safeText(entityState.attributes?.device_class).toLowerCase()
+      const unit = safeText(entityState.attributes?.unit_of_measurement)
+      const key = `${deviceClass}|${unit}`
+      const group = groups.get(key) || {
+        deviceClass,
+        unit,
+        values: [],
+        entities: [],
+      }
+
+      group.values.push(numeric)
+      group.entities.push(entityConfig)
+      groups.set(key, group)
+    }
+
+    return [...groups.values()].map((group) => {
+      const values = [...group.values].sort((left, right) => left - right)
+      const isSum = SUM_SENSOR_CLASSES.has(group.deviceClass)
+      const raw = isSum
+        ? values.reduce((sum, value) => sum + value, 0)
+        : values[Math.floor(values.length / 2)]
+      const firstEntity = group.entities[0]
+      const registryItem = this._hass?.entities?.[firstEntity.entity]
+      const precision = Number.isFinite(registryItem?.display_precision)
+        ? registryItem.display_precision
+        : Number.isInteger(raw)
+          ? 0
+          : 1
+
+      return {
+        entity: firstEntity.entity,
+        icon: this._getSensorClassIcon(group.deviceClass),
+        name: this._formatDeviceClassLabel(group.deviceClass),
+        source_entities: group.entities.map((entityConfig) => entityConfig.entity),
+        display_state: `${formatNumber(this._hass, raw, precision)}${group.unit ? ` ${group.unit}` : ""}`,
+      }
+    })
+  }
+
+  _getSensorClassIcon(deviceClass) {
+    const icons = {
+      apparent_power: "mdi:flash",
+      battery: "mdi:battery",
+      carbon_dioxide: "mdi:molecule-co2",
+      carbon_monoxide: "mdi:molecule-co",
+      current: "mdi:current-ac",
+      energy: "mdi:lightning-bolt",
+      gas: "mdi:meter-gas",
+      humidity: "mdi:water-percent",
+      illuminance: "mdi:brightness-5",
+      monetary: "mdi:cash",
+      power: "mdi:flash",
+      pressure: "mdi:gauge",
+      temperature: "mdi:thermometer",
+      voltage: "mdi:sine-wave",
+      water: "mdi:water",
+    }
+    return icons[deviceClass] || "mdi:gauge"
+  }
+
+  _formatDeviceClassLabel(deviceClass) {
+    const labels = {
+      apparent_power: "Puissance apparente",
+      battery: "Batterie",
+      carbon_dioxide: "CO2",
+      carbon_monoxide: "CO",
+      current: "Intensite",
+      energy: "Energie",
+      gas: "Gaz",
+      humidity: "Humidite",
+      illuminance: "Luminosite",
+      monetary: "Cout",
+      power: "Puissance",
+      pressure: "Pression",
+      temperature: "Temperature",
+      voltage: "Tension",
+      water: "Eau",
+    }
+    return labels[deviceClass] || safeText(deviceClass).replace(/_/g, " ")
   }
 
   _getBackgroundImage() {
     const hass = this._hass
     if (!hass) {
+      return ""
+    }
+
+    if (this.config.display_type === "camera") {
+      return this._getCameraImageUrl(this._renderModel.cameraEntity)
+    }
+
+    if (this.config.display_type !== "picture") {
       return ""
     }
 
@@ -551,6 +935,56 @@ class AlphaAreaCard extends HTMLElement {
     } catch (_error) {
       return selected
     }
+  }
+
+  _getCameraImageUrl(entityId) {
+    if (!entityId) {
+      return ""
+    }
+
+    const baseUrl = this._hass?.auth?.data?.hassUrl || window.location.origin
+    const cameraState = this._hass?.states?.[entityId]
+    const cacheKey = encodeURIComponent(cameraState?.last_updated || cameraState?.last_changed || "")
+
+    try {
+      return new URL(`/api/camera_proxy/${entityId}?t=${cacheKey}`, baseUrl).toString()
+    } catch (_error) {
+      return `/api/camera_proxy/${entityId}?t=${cacheKey}`
+    }
+  }
+
+  _getAreaIcon() {
+    return this.config.icon || this._renderModel.area?.icon || "mdi:home-map-marker"
+  }
+
+  _getAspectRatioCss() {
+    const value = safeText(this.config.aspect_ratio || "16:9").trim()
+    if (!value) {
+      return "16 / 9"
+    }
+
+    if (/^\d+(\.\d+)?%$/.test(value)) {
+      const numeric = Number(value.replace("%", ""))
+      return Number.isFinite(numeric) && numeric > 0 ? `100 / ${numeric}` : "16 / 9"
+    }
+
+    const ratioMatch = value.match(/^(\d+(?:\.\d+)?)(?:\s*[:x]\s*(\d+(?:\.\d+)?))?$/i)
+    if (!ratioMatch) {
+      return "16 / 9"
+    }
+
+    const width = Number(ratioMatch[1])
+    const height = Number(ratioMatch[2] || 1)
+    return width > 0 && height > 0 ? `${width} / ${height}` : "16 / 9"
+  }
+
+  _getDarkenFilter() {
+    const value = this.config.darken_image
+    if (typeof value === "number") {
+      const brightness = Math.max(0.2, Math.min(1, 1 - value))
+      return `brightness(${brightness})`
+    }
+    return value ? "brightness(0.62)" : "brightness(0.96)"
   }
 
   _onCardClick() {
@@ -673,6 +1107,8 @@ class AlphaAreaCard extends HTMLElement {
       ...this._renderModel.entitiesDialog,
       ...this._renderModel.entitiesToggle,
       ...this._renderModel.entitiesSensors,
+      ...this._renderModel.entitiesAlerts,
+      ...this._renderModel.sensorSummaries,
     ]
     return list.find((item) => item.entity === entityId)
   }
@@ -724,7 +1160,7 @@ class AlphaAreaCard extends HTMLElement {
     }
 
     const icon = getEntityIcon(entityState, entityConfig.icon)
-    const name = getEntityName(entityState, entityConfig.entity)
+    const name = getEntityName(hass, entityState, entityConfig.entity, entityConfig)
     const isOn = entityState?.state === "on"
     const displayState = getDisplayState(
       hass,
@@ -738,7 +1174,7 @@ class AlphaAreaCard extends HTMLElement {
       ? ' data-state-color="1"'
       : ""
     const sensorHtml = asSensorLine
-      ? `<span class=\"sensor-value\">${safeText(displayState)}</span>`
+      ? `<span class=\"sensor-value\">${escapeHtml(displayState)}</span>`
       : ""
 
     const badgeHtml = entityConfig.entity.startsWith("light.")
@@ -746,9 +1182,9 @@ class AlphaAreaCard extends HTMLElement {
       : ""
 
     return `
-      <button class=\"entity ${asSensorLine ? "sensor" : "action"} ${isOn ? "is-on" : ""}\" data-entity-id=\"${entityConfig.entity}\" title=\"${title}\"${stateColorAttr}>
-        <ha-state-icon icon=\"${icon}\" class=\"entity-icon\"></ha-state-icon>
-        ${asSensorLine ? `<span class=\"entity-label\">${name}</span>` : ""}
+      <button class=\"entity ${asSensorLine ? "sensor" : "action"} ${entityConfig.alert ? "alert" : ""} ${isOn ? "is-on" : ""}\" data-entity-id=\"${escapeAttribute(entityConfig.entity)}\" title=\"${escapeAttribute(title)}\"${stateColorAttr}>
+        <ha-state-icon icon=\"${escapeAttribute(icon)}\" class=\"entity-icon\"></ha-state-icon>
+        ${asSensorLine ? `<span class=\"entity-label\">${escapeHtml(name)}</span>` : ""}
         ${sensorHtml}
         ${badgeHtml}
       </button>
@@ -770,12 +1206,13 @@ class AlphaAreaCard extends HTMLElement {
       return ""
     }
 
-    return `<span class=\"entity-badge\">${activeCount}</span>`
+    return `<span class=\"entity-badge\">${escapeHtml(activeCount)}</span>`
   }
 
   _computeCardCssVariables() {
     const styles = this.config.styles || {}
     const vars = {
+      "--mac-accent-color": resolveColorToken(this.config.color, styles.button_icon_color_on),
       "--mac-button-icon-color-on": styles.button_icon_color_on,
       "--mac-button-icon-color-off": styles.button_icon_color_off,
       "--mac-badge-text-color": styles.badge_text_color,
@@ -798,13 +1235,28 @@ class AlphaAreaCard extends HTMLElement {
       return
     }
 
-    const areaName = this._renderModel.area?.name || this.config.area || "Area"
-    const title = this.config.title || areaName
+    const displayType = this.config.display_type || "picture"
+    const compact = displayType === "compact"
+    const areaName = this._renderModel.area?.name || this.config.area || ""
+    const title = this.config.title || areaName || "Selectionner une zone"
     const backgroundImage = this._getBackgroundImage()
+    const areaIcon = this._getAreaIcon()
+    const aspectRatio = this._getAspectRatioCss()
+    const darkenFilter = this._getDarkenFilter()
     const styles = this.config.styles || {}
+
+    const sensorSummaryButtons = this._renderModel.sensorSummaries
+      .map((entity) => this._renderEntityButton(entity, true))
+      .filter(Boolean)
+      .join("")
 
     const sensorButtons = this._renderModel.entitiesSensors
       .map((entity) => this._renderEntityButton(entity, true))
+      .filter(Boolean)
+      .join("")
+
+    const alertButtons = this._renderModel.entitiesAlerts
+      .map((entity) => this._renderEntityButton({ ...entity, alert: true }, false))
       .filter(Boolean)
       .join("")
 
@@ -820,18 +1272,31 @@ class AlphaAreaCard extends HTMLElement {
       .filter(Boolean)
       .join("")
 
-    const toggleButtons = this._renderModel.entitiesToggle
+    const toggleButtonList = this._renderModel.entitiesToggle
       .map((entity) => this._renderEntityButton(entity, false))
       .filter(Boolean)
-      .join("")
+    const inlineFeatureButtons =
+      this.config.features_position === "inline" ? toggleButtonList.slice(0, 1).join("") : ""
+    const toggleButtons =
+      this.config.features_position === "inline"
+        ? toggleButtonList.slice(1).join("")
+        : toggleButtonList.join("")
 
     const hasMedia = Boolean(mediaButtons)
+    const hasInlineMeta = Boolean(alertButtons || inlineFeatureButtons)
+    const hasSensors = Boolean(sensorSummaryButtons || sensorButtons)
 
     const stateSnapshot = JSON.stringify({
       title,
+      displayType,
       backgroundImage,
-      darkenImage: Boolean(this.config.darken_image),
+      areaIcon,
+      aspectRatio,
+      darkenFilter,
       sensorButtons,
+      sensorSummaryButtons,
+      alertButtons,
+      inlineFeatureButtons,
       mediaButtons,
       dialogButtons,
       toggleButtons,
@@ -839,6 +1304,8 @@ class AlphaAreaCard extends HTMLElement {
       stateColor: Boolean(this.config.state_color),
       shadow: Boolean(this.config.shadow),
       hasMedia,
+      hasInlineMeta,
+      hasSensors,
       styles,
     })
 
@@ -858,6 +1325,7 @@ class AlphaAreaCard extends HTMLElement {
       <style>
         :host {
           display: block;
+          --mac-accent-color: ${STYLE_DEFAULTS.button_icon_color_on};
           --mac-button-icon-color-on: ${STYLE_DEFAULTS.button_icon_color_on};
           --mac-button-icon-color-off: ${STYLE_DEFAULTS.button_icon_color_off};
           --mac-badge-text-color: ${STYLE_DEFAULTS.badge_text_color};
@@ -867,7 +1335,8 @@ class AlphaAreaCard extends HTMLElement {
           --mac-title-text-transform: ${STYLE_DEFAULTS.title_text_transform};
           --mac-title-text-shadow: ${STYLE_DEFAULTS.title_text_shadow};
           --mac-image-blur: ${STYLE_DEFAULTS.image_blur};
-          --mac-card-height: 180px;
+          --mac-card-height: ${compact ? "112px" : "180px"};
+          --mac-aspect-ratio: ${aspectRatio};
         }
 
         ha-card {
@@ -877,13 +1346,24 @@ class AlphaAreaCard extends HTMLElement {
           background: var(--card-background-color, #1f2937);
           color: var(--primary-text-color, #f8fafc);
           min-height: var(--mac-card-height);
-          height: var(--mac-card-height);
+          aspect-ratio: ${compact ? "auto" : "var(--mac-aspect-ratio)"};
+          height: auto;
           display: flex;
           flex-direction: column;
           justify-content: center;
           cursor: pointer;
           transition: transform 160ms ease, box-shadow 160ms ease;
+          border: 1px solid color-mix(in srgb, var(--divider-color, rgba(148, 163, 184, 0.28)) 70%, transparent);
           ${cardStyle}
+        }
+
+        ha-card.is-compact {
+          min-height: 104px;
+        }
+
+        ha-card:focus-within {
+          outline: 2px solid color-mix(in srgb, var(--mac-accent-color) 72%, transparent);
+          outline-offset: 2px;
         }
 
         ha-card:active {
@@ -901,14 +1381,14 @@ class AlphaAreaCard extends HTMLElement {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          filter: blur(var(--mac-image-blur)) ${this.config.darken_image ? "brightness(0.58)" : "brightness(0.92)"};
+          filter: blur(var(--mac-image-blur)) ${darkenFilter};
           transform: scale(1.04);
         }
 
         .overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.55) 80%);
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.58) 82%);
         }
 
         .content {
@@ -918,16 +1398,49 @@ class AlphaAreaCard extends HTMLElement {
           gap: 6px;
           padding: 12px 14px;
           height: 100%;
+          box-sizing: border-box;
+        }
+
+        .topline {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: start;
+          gap: 10px;
         }
 
         .title {
           font-size: 1.3rem;
-          letter-spacing: 0.02em;
+          letter-spacing: 0;
           font-weight: var(--mac-title-font-weight);
           text-transform: var(--mac-title-text-transform);
           text-shadow: var(--mac-title-text-shadow);
           margin: 0;
+          min-width: 0;
+          overflow-wrap: anywhere;
           ${titleStyle}
+        }
+
+        .inline-meta {
+          display: ${hasInlineMeta ? "flex" : "none"};
+          align-items: center;
+          justify-content: flex-end;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .area-icon {
+          position: absolute;
+          right: 12px;
+          bottom: 8px;
+          z-index: 0;
+          color: var(--mac-accent-color);
+          opacity: ${backgroundImage ? "0.16" : "0.24"};
+          --mdc-icon-size: ${compact ? "56px" : "86px"};
+          pointer-events: none;
+        }
+
+        ha-card.has-background .area-icon {
+          color: var(--primary-text-color, #f8fafc);
         }
 
         .sensors {
@@ -935,7 +1448,7 @@ class AlphaAreaCard extends HTMLElement {
           flex-wrap: wrap;
           align-items: center;
           gap: 6px;
-          min-height: 32px;
+          min-height: ${hasSensors ? "32px" : "0"};
         }
 
         .actions {
@@ -972,6 +1485,11 @@ class AlphaAreaCard extends HTMLElement {
           background: rgba(17, 24, 39, 0.48);
         }
 
+        .entity:focus-visible {
+          outline: 2px solid var(--mac-accent-color);
+          outline-offset: 2px;
+        }
+
         .entity:active {
           transform: scale(0.97);
         }
@@ -988,6 +1506,11 @@ class AlphaAreaCard extends HTMLElement {
           border-radius: 12px;
           background: rgba(2, 6, 23, 0.2);
           padding: 3px 8px;
+        }
+
+        .entity.alert {
+          color: var(--warning-color, #f59e0b);
+          background: rgba(245, 158, 11, 0.18);
         }
 
         .entity-label {
@@ -1046,11 +1569,15 @@ class AlphaAreaCard extends HTMLElement {
         }
       </style>
 
-      <ha-card>
-        ${backgroundImage ? `<div class=\"bg\"><img src=\"${backgroundImage}\" alt=\"${title}\"></div><div class=\"overlay\"></div>` : ""}
+      <ha-card class=\"display-${displayType} ${compact ? "is-compact" : ""} ${backgroundImage ? "has-background" : "no-background"}\">
+        ${backgroundImage ? `<div class=\"bg\"><img src=\"${escapeAttribute(backgroundImage)}\" alt=\"${escapeAttribute(title)}\"></div><div class=\"overlay\"></div>` : ""}
+        <ha-icon class=\"area-icon\" icon=\"${escapeAttribute(areaIcon)}\"></ha-icon>
         <div class=\"content\">
-          <h3 class=\"title\">${title}</h3>
-          <div class=\"sensors\">${sensorButtons}</div>
+          <div class=\"topline\">
+            <h3 class=\"title\">${escapeHtml(title)}</h3>
+            <div class=\"inline-meta\">${alertButtons}${inlineFeatureButtons}</div>
+          </div>
+          <div class=\"sensors\">${sensorSummaryButtons}${sensorButtons}</div>
           <div class=\"actions\">
             <div class=\"actions-left\">${mediaButtons}</div>
             <div class=\"actions-right\">${dialogButtons}${toggleButtons}</div>
@@ -1090,45 +1617,92 @@ class AlphaAreaCardEditor extends LitElement {
   }
 
   setConfig(config) {
+    const incoming = config || {}
     this.config = {
-      ...DEFAULT_CONFIG,
-      ...config,
+      ...deepClone(DEFAULT_CONFIG),
+      ...incoming,
       styles: {
         ...DEFAULT_CONFIG.styles,
-        ...(config.styles || {}),
+        ...(incoming.styles || {}),
       },
       tap_action: {
         ...DEFAULT_CONFIG.tap_action,
-        ...(config.tap_action || {}),
+        ...(incoming.tap_action || {}),
       },
       hold_action: {
         ...DEFAULT_CONFIG.hold_action,
-        ...(config.hold_action || {}),
+        ...(incoming.hold_action || {}),
       },
       double_tap_action: {
         ...DEFAULT_CONFIG.double_tap_action,
-        ...(config.double_tap_action || {}),
+        ...(incoming.double_tap_action || {}),
       },
       entity_hold_action: {
         ...DEFAULT_CONFIG.entity_hold_action,
-        ...(config.entity_hold_action || {}),
+        ...(incoming.entity_hold_action || {}),
       },
       entity_double_tap_action: {
         ...DEFAULT_CONFIG.entity_double_tap_action,
-        ...(config.entity_double_tap_action || {}),
+        ...(incoming.entity_double_tap_action || {}),
       },
     }
+    this.config.display_type = normalizeSelect(this.config.display_type, DISPLAY_TYPES, "picture")
+    this.config.features_position = normalizeSelect(
+      this.config.features_position,
+      FEATURE_POSITIONS,
+      "bottom"
+    )
     this._jsonErrors = {}
   }
 
   _emit(config) {
     this.dispatchEvent(
       new CustomEvent("config-changed", {
-        detail: { config },
+        detail: { config: this._pruneConfig(config) },
         bubbles: true,
         composed: true,
       })
     )
+  }
+
+  _pruneConfig(config) {
+    const cleaned = {}
+
+    for (const [key, value] of Object.entries(config || {})) {
+      if (key === "styles") {
+        const styles = this._pruneObject(value, DEFAULT_CONFIG.styles)
+        if (Object.keys(styles).length) {
+          cleaned.styles = styles
+        }
+        continue
+      }
+
+      if (this._isDefaultValue(value, DEFAULT_CONFIG[key])) {
+        continue
+      }
+
+      if (value === "" || value === undefined || value === null) {
+        continue
+      }
+
+      cleaned[key] = value
+    }
+
+    return cleaned
+  }
+
+  _pruneObject(value, defaults = {}) {
+    const cleaned = {}
+    for (const [key, item] of Object.entries(value || {})) {
+      if (!this._isDefaultValue(item, defaults[key]) && item !== "" && item !== undefined) {
+        cleaned[key] = item
+      }
+    }
+    return cleaned
+  }
+
+  _isDefaultValue(value, defaultValue) {
+    return JSON.stringify(value) === JSON.stringify(defaultValue)
   }
 
   _setValue(path, value) {
@@ -1195,8 +1769,45 @@ class AlphaAreaCardEditor extends LitElement {
     this._setValue(path, parseDomainsText(value))
   }
 
+  _onStringList(path, event, lowerCase = false) {
+    const value = safeText(event.target.value).trim()
+    if (!value) {
+      this._removeValue(path)
+      return
+    }
+
+    const list = parseStringList(value).map((item) => (lowerCase ? item.toLowerCase() : item))
+    this._setValue(path, list)
+  }
+
   _domainsToText(value) {
     return Array.isArray(value) ? value.join(", ") : ""
+  }
+
+  _hasAreaControlsFeature() {
+    return (this.config.features || []).some((feature) => {
+      const type = typeof feature === "string" ? feature : feature?.type
+      return AREA_CONTROL_FEATURE_TYPES.has(safeText(type))
+    })
+  }
+
+  _toggleAreaControlsFeature(enabled) {
+    const existing = Array.isArray(this.config.features) ? this.config.features : []
+    const features = existing.filter((feature) => {
+      const type = typeof feature === "string" ? feature : feature?.type
+      return !AREA_CONTROL_FEATURE_TYPES.has(safeText(type))
+    })
+
+    if (enabled) {
+      features.unshift({ type: "area-controls" })
+    }
+
+    if (features.length) {
+      this._setValue("features", features)
+      return
+    }
+
+    this._removeValue("features")
   }
 
   _readPath(path) {
@@ -1241,7 +1852,10 @@ class AlphaAreaCardEditor extends LitElement {
   }
 
   _renderActionEditor(path, label) {
-    const actionConfig = normalizeActionConfig(this._readPath(path), path === "tap_action" ? "more-info" : "none")
+    const actionConfig = normalizeActionConfig(
+      this._readPath(path),
+      path === "tap_action" ? "more-info" : "none"
+    )
     const actionType = actionConfig.action || "none"
     const dataError = this._jsonErrors?.[`${path}.service_data`] || ""
     const targetError = this._jsonErrors?.[`${path}.target`] || ""
@@ -1253,9 +1867,7 @@ class AlphaAreaCardEditor extends LitElement {
           .value="${actionType}"
           @change="${(event) => this._updateActionType(path, event.target.value)}"
         >
-          ${ACTION_OPTIONS.map(
-            (option) => html`<option value="${option}">${option}</option>`
-          )}
+          ${ACTION_OPTIONS.map((option) => html`<option value="${option}">${option}</option>`)}
         </select>
 
         ${actionType === "navigate"
@@ -1268,7 +1880,6 @@ class AlphaAreaCardEditor extends LitElement {
               />
             `
           : ""}
-
         ${actionType === "url"
           ? html`
               <label>URL</label>
@@ -1279,7 +1890,6 @@ class AlphaAreaCardEditor extends LitElement {
               />
             `
           : ""}
-
         ${actionType === "call-service"
           ? html`
               <label>Service</label>
@@ -1291,7 +1901,9 @@ class AlphaAreaCardEditor extends LitElement {
 
               <label>Service data (JSON objet)</label>
               <textarea
-                .value="${actionConfig.service_data ? JSON.stringify(actionConfig.service_data, null, 2) : ""}"
+                .value="${actionConfig.service_data
+                  ? JSON.stringify(actionConfig.service_data, null, 2)
+                  : ""}"
                 placeholder='{"brightness_pct": 80}'
                 @change="${(event) => this._updateActionJson(path, "service_data", event)}"
               ></textarea>
@@ -1407,16 +2019,15 @@ class AlphaAreaCardEditor extends LitElement {
         ${entities.length === 0
           ? html`<div class="empty-state">Aucune entité sélectionnée</div>`
           : html`<div class="entities-list">
-              ${entities.map(
-                (entity, index) => {
-                  const parsed = parseEntityConfig(entity)
-                  const entityId = parsed?.entity || ""
-                  const isAdvanced = Boolean(
-                    parsed &&
-                      typeof entity === "object" &&
-                      Object.keys(entity).some((key) => key !== "entity")
-                  )
-                  return html`
+              ${entities.map((entity, index) => {
+                const parsed = parseEntityConfig(entity)
+                const entityId = parsed?.entity || ""
+                const isAdvanced = Boolean(
+                  parsed &&
+                  typeof entity === "object" &&
+                  Object.keys(entity).some((key) => key !== "entity")
+                )
+                return html`
                   <div class="entity-row">
                     <ha-entity-picker
                       .hass="${this.hass}"
@@ -1450,12 +2061,13 @@ class AlphaAreaCardEditor extends LitElement {
                       ✕
                     </button>
                     ${isAdvanced
-                      ? html`<div class="entity-hint">Mode avancé actif (name/icon/attribute/actions personnalisés)</div>`
+                      ? html`<div class="entity-hint">
+                          Mode avancé actif (name/icon/attribute/actions personnalisés)
+                        </div>`
                       : ""}
                   </div>
                 `
-                }
-              )}
+              })}
             </div>`}
       </div>
     `
@@ -1492,6 +2104,44 @@ class AlphaAreaCardEditor extends LitElement {
               )}
             </select>
 
+            <label>Mode d'affichage</label>
+            <select
+              .value="${this.config.display_type || "picture"}"
+              @change="${(event) => this._setValue("display_type", event.target.value)}"
+            >
+              <option value="picture">picture</option>
+              <option value="camera">camera</option>
+              <option value="icon">icon</option>
+              <option value="compact">compact</option>
+            </select>
+
+            ${this.config.display_type === "camera"
+              ? html`
+                  <label>Caméra</label>
+                  <ha-entity-picker
+                    .hass="${this.hass}"
+                    .value="${this.config.camera_entity || ""}"
+                    allow-custom-entity
+                    @value-changed="${(event) =>
+                      this._setValue("camera_entity", event.detail.value || "")}"
+                  ></ha-entity-picker>
+                `
+              : ""}
+
+            <label>Ratio image</label>
+            <input
+              .value="${this.config.aspect_ratio || ""}"
+              placeholder="16:9"
+              @input="${(event) => this._onInput("aspect_ratio", event)}"
+            />
+
+            <label>Couleur HA (token ou hex)</label>
+            <input
+              .value="${this.config.color || ""}"
+              placeholder="primary, blue, #00AEEF"
+              @input="${(event) => this._onInput("color", event)}"
+            />
+
             <label>
               <input
                 type="checkbox"
@@ -1503,12 +2153,16 @@ class AlphaAreaCardEditor extends LitElement {
 
             ${this._renderEntitiesField()}
 
-            <label>Image de fond (URL ou /local/...)</label>
-            <input
-              .value="${this.config.image || ""}"
-              placeholder="/local/images/cuisine.jpg"
-              @input="${(event) => this._onInput("image", event)}"
-            />
+            ${this.config.display_type !== "camera"
+              ? html`
+                  <label>Image de fond (URL ou /local/...)</label>
+                  <input
+                    .value="${this.config.image || ""}"
+                    placeholder="/local/images/zone.jpg"
+                    @input="${(event) => this._onInput("image", event)}"
+                  />
+                `
+              : ""}
 
             <label>
               <input
@@ -1633,6 +2287,45 @@ class AlphaAreaCardEditor extends LitElement {
               placeholder="sensor, binary_sensor"
               @change="${(event) => this._onDomains("exclude_domains", event)}"
             />
+
+            <label>Entités exclues</label>
+            <textarea
+              .value="${this._domainsToText(this.config.exclude_entities)}"
+              placeholder="sensor.exemple, binary_sensor.exemple"
+              @change="${(event) => this._onStringList("exclude_entities", event)}"
+            ></textarea>
+
+            <label>Classes de capteurs</label>
+            <input
+              .value="${this._domainsToText(this.config.sensor_classes)}"
+              placeholder="temperature, humidity, power"
+              @change="${(event) => this._onStringList("sensor_classes", event, true)}"
+            />
+
+            <label>Classes d'alertes</label>
+            <input
+              .value="${this._domainsToText(this.config.alert_classes)}"
+              placeholder="motion, moisture, opening"
+              @change="${(event) => this._onStringList("alert_classes", event, true)}"
+            />
+
+            <label>
+              <input
+                type="checkbox"
+                .checked="${this._hasAreaControlsFeature()}"
+                @change="${(event) => this._toggleAreaControlsFeature(event.target.checked)}"
+              />
+              Feature HA area-controls
+            </label>
+
+            <label>Position des features</label>
+            <select
+              .value="${this.config.features_position || "bottom"}"
+              @change="${(event) => this._setValue("features_position", event.target.value)}"
+            >
+              <option value="bottom">bottom</option>
+              <option value="inline">inline</option>
+            </select>
 
             <label>
               <input

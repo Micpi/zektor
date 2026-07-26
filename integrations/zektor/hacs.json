@@ -1,0 +1,12 @@
+{
+  "name": "Zektor Audio System",
+  "content_in_root": false,
+  "render_readme": true,
+  "homeassistant": "2024.1.0",
+  "domains": [
+    "zektor"
+  ],
+  "zip_release": false,
+  "version": "0.3.8"
+}
+

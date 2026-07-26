@@ -18,6 +18,7 @@ Ajustez l'intensité et l'état de vos luminaires avec un rendu compact et lisib
 ## ✨ Points forts
 
 - controle rapide d une ou plusieurs lumieres
+- bouton global dans la ligne de titre avec l'etat `Allumé` / `Éteint`
 - slider fluide avec retour visuel immediat
 - mode dimmer ou toggle par entite
 - configuration visuelle disponible dans Lovelace
@@ -75,7 +76,10 @@ slider_padding: 16
 show_percentage: true
 live_update: false
 label_position: above
+background_style: default
+background_blur: 18
 card_background: "var(--ha-card-background)"
+show_frame: true
 
 # Compact mobile
 compact_mobile: true
@@ -96,19 +100,43 @@ mobile_icon_size: "21px"
 - `bar_opacity` (défaut: `0.85`): Opacité de la barre ON (0 à 1).
 - `height` (défaut: `48`): Hauteur du slider (px).
 - `border_radius` (défaut: `14`): Arrondi des coins (px).
+- `background_style` (défaut: `default`): `default`, `transparent`, `gradient`, `blur`, `glass` ou `custom`.
+- `background_blur` (défaut: `18`): Force de flou utilisée par les modes `blur` et `glass`.
+- `card_background` (défaut: `var(--ha-card-background)`): Fond CSS personnalisé utilisé si `background_style: custom`.
+- `show_frame` (défaut: `true`): Affiche ou non le cadre de la carte.
 - `icon_size` (défaut: `24px`): Taille de l'icône desktop.
 - `slider_gap` (défaut: `14`): Espacement vertical entre sliders (px).
 - `slider_padding` (défaut: `16`): Padding horizontal de la carte (px).
 - `show_percentage` (défaut: `true`): Afficher le pourcentage/état.
 - `live_update` (défaut: `false`): Envoie les changements pendant le glissement.
 - `label_position` (défaut: `above`): `above` ou `inside` (dans la barre).
-- `card_background` (défaut: `var(--ha-card-background)`): Fond de la carte.
 - `compact_mobile` (défaut: `true`): Active le mode compact mobile.
 - `compact_breakpoint` (défaut: `560`): Largeur max (px) pour activer le mode compact.
 - `mobile_height` (défaut: `height - 8`, min 36): Hauteur du slider en mode compact.
 - `mobile_slider_gap` (défaut: `slider_gap - 4`, min 8): Espacement en mode compact.
 - `mobile_slider_padding` (défaut: `slider_padding - 4`, min 8): Padding horizontal en mode compact.
 - `mobile_icon_size` (défaut: `icon_size - 3`): Taille de l'icône en mode compact.
+
+### Exemples de fond
+
+```yaml
+# Fond transparent
+background_style: transparent
+
+# Fond dégradé doux
+background_style: gradient
+
+# Glassmorphism avec flou réglable
+background_style: glass
+background_blur: 24
+
+# Fond CSS entièrement personnalisé
+background_style: custom
+card_background: "linear-gradient(145deg, rgba(0,0,0,0.55), rgba(0,0,0,0.20))"
+
+# Carte sans cadre
+show_frame: false
+```
 
 ## 🧭 Options par entité (`entities`)
 
@@ -137,6 +165,7 @@ Clés disponibles par entité :
 ## Fonctionnement
 
 - **Glisser** sur le bargraphe pour régler la luminosité
+- **Cliquer** sur le bouton `Allumé` / `Éteint` du titre pour allumer toutes les lumières si elles sont éteintes, ou tout éteindre si au moins une est allumée
 - **Cliquer** sur le bouton ⏻ en bout de barre pour allumer/éteindre
 - Mettre la luminosité à 0 éteint automatiquement la lumière
 - En mode `toggle`, cliquer sur la barre agit comme un bouton ON/OFF

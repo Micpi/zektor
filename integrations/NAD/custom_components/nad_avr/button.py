@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .commands import COMMANDS
+from .const import CORE_VARIABLES
 from .entity import NadEntity, variable_name, variable_slug
 
 
@@ -18,14 +20,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up NAD AVR button entities."""
     runtime = entry.runtime_data
-    entities = [NadReconnectButton(entry, runtime)]
-    for variable, meta in COMMANDS.items():
-        if "=" in meta["op"]:
-            continue
-        if "+" in meta["op"]:
-            entities.append(NadStepButton(entry, runtime, variable, "+"))
-        if "-" in meta["op"]:
-            entities.append(NadStepButton(entry, runtime, variable, "-"))
+    coordinator = runtime.coordinator
+    entities: list[ButtonEntity] = [NadReconnectButton(entry, runtime)]
+    if coordinator.should_create_variable_entity("Main.ListeningMode", CORE_VARIABLES):
+        entities.append(NadStepButton(entry, runtime, "Main.ListeningMode", "-"))
+        entities.append(NadStepButton(entry, runtime, "Main.ListeningMode", "+"))
     async_add_entities(entities)
 
 
@@ -64,6 +63,8 @@ class NadStepButton(NadEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Send the step command."""
         await self.coordinator.client.step_variable(self.variable, self.operator)
+        await asyncio.sleep(0.2)
+        await self.coordinator.client.query(self.variable)
 
     def press(self) -> None:
         """Sync stub."""

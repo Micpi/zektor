@@ -1,0 +1,287 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ─────────────────────────────────────────────────────
+    //  YAML
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Vérifier la config YAML",
+      "type": "shell",
+      "command": "pwsh",
+      "args": ["-File", "${workspaceFolder}/scripts/check_yaml.ps1"],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  TESTS PYTHON
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Tests intégration (pytest)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": ["-File", "${workspaceFolder}/scripts/test_integration.ps1"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):\\s+(ERROR|FAILED)\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
+      }
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  BUILD CUSTOM CARD
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Build custom card",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/build_card.ps1",
+        "-CardName",
+        "${input:cardName}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": ["$eslint-compact"]
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  ONE-CLICK PUBLISH CURRENT JS
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Publish fichier JS courant (1 clic)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/publish_current_js.ps1",
+        "-CurrentFile",
+        "${file}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "HA: Publish current file (one click)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/publish_current_js.ps1",
+        "-CurrentFile",
+        "${file}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  HACS RELEASE WITH DETAILED CHANGELOG
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Preview release HACS détaillée (fichier courant)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/release_hacs.ps1",
+        "-CurrentFile",
+        "${file}",
+        "-Message",
+        "${input:releaseMessage}",
+        "-Bump",
+        "${input:releaseBump}",
+        "-DryRun"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "HA: Release HACS détaillée (fichier courant)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/release_hacs.ps1",
+        "-CurrentFile",
+        "${file}",
+        "-Message",
+        "${input:releaseMessage}",
+        "-Bump",
+        "${input:releaseBump}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  VEILLE API HOME ASSISTANT
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Veille API Home Assistant",
+      "type": "shell",
+      "command": "pwsh",
+      "args": ["-File", "${workspaceFolder}/scripts/check_ha_api_updates.ps1"],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  CATALOGUE WORKSPACE
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Generer catalogue workspace",
+      "type": "shell",
+      "command": "pwsh",
+      "args": ["-File", "${workspaceFolder}/scripts/generate_workspace_catalog.ps1"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  GIT COMMIT
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Commit & Push",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/auto_commit.ps1",
+        "-Message",
+        "${input:commitMessage}"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  LINT PYTHON
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Lint Python (pylint + mypy)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "if (-not (Test-Path integrations)) { Write-Host 'Aucun dossier integrations, lint Python ignoré.'; exit 0 }; $pyFiles = Get-ChildItem integrations -Recurse -Include *.py,*.pyi -ErrorAction SilentlyContinue; if (-not $pyFiles -or $pyFiles.Count -eq 0) { Write-Host 'Aucun fichier Python trouvé dans integrations, lint Python ignoré.'; exit 0 }; if (Test-Path .venv\\Scripts\\python.exe) { .venv\\Scripts\\python.exe -m pylint integrations/ --rcfile=.pylintrc 2>&1; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; .venv\\Scripts\\python.exe -m mypy integrations/ --ignore-missing-imports 2>&1; exit $LASTEXITCODE } else { python -m pylint integrations/ --rcfile=.pylintrc 2>&1; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; python -m mypy integrations/ --ignore-missing-imports 2>&1; exit $LASTEXITCODE }"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": ["$pylint"]
+    },
+
+    // ─────────────────────────────────────────────────────
+    //  FULL PIPELINE
+    // ─────────────────────────────────────────────────────
+    {
+      "label": "HA: Pipeline complet (lint + test + yaml)",
+      "dependsOn": [
+        "HA: Lint Python (pylint + mypy)",
+        "HA: Vérifier la config YAML",
+        "HA: Tests intégration (pytest)"
+      ],
+      "dependsOrder": "sequence",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ],
+
+  "inputs": [
+    {
+      "id": "cardName",
+      "type": "promptString",
+      "description": "Nom du custom card (ex: my-sensor-card)",
+      "default": "my-card"
+    },
+    {
+      "id": "commitMessage",
+      "type": "promptString",
+      "description": "Message du commit Git",
+      "default": "feat: mise à jour"
+    },
+    {
+      "id": "releaseMessage",
+      "type": "promptString",
+      "description": "Résumé de la release HACS",
+      "default": "chore(release): mise à jour HACS"
+    },
+    {
+      "id": "releaseBump",
+      "type": "pickString",
+      "description": "Type de montée de version SemVer",
+      "options": ["patch", "minor", "major"],
+      "default": "patch"
+    }
+  ]
+}

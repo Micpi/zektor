@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.2.0 - 2026-07-21
+
+### Added
+
+- Blank Lovelace stub: adding the card now starts from an empty configuration instead of a demo room.
+- Modern Area card options: `display_type`, `camera_view`, `camera_entity`, `aspect_ratio`, `color`, `sensor_classes`, `alert_classes`, `exclude_entities`, `features`, and `features_position`.
+- `features: [{ type: "area-controls" }]` support, including `controls` entries by domain or `entity_id`.
+- Camera display mode using the selected camera or the first camera assigned to the area.
+- Area sensor summaries by `device_class`, using median values for normal sensors and sums for cumulative classes.
+- Alert chips for active binary sensors matching `alert_classes`.
+
+### Changed
+
+- Internal visual defaults now follow the workspace theme variables instead of hard-coded demo colors.
+- The visual editor emits a pruned configuration so unchanged defaults are not persisted in YAML.
+- Entity names and states use Home Assistant frontend formatters when available.
+- Toggle actions now use `homeassistant.toggle` for better domain compatibility.
+
+### Fixed
+
+- Removed the bundled `Cuisine` example entities, navigation path, and `card_mod` style from the default model.
+- Auto area rendering now refreshes when entity/device/area registry data changes.
+- User-provided labels, titles, icons, and image URLs are escaped before HTML rendering.
+
 ## v1.1.0 - 2026-07-21
 
 ### Added

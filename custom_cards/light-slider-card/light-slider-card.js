@@ -285,6 +285,14 @@ class LightSliderCardEditor extends HTMLElement {
       title: this._config.title || "",
       height: this._config.height || 48,
       border_radius: this._config.border_radius || 14,
+      background_style:
+        this._config.background_style || (this._config.card_background ? "custom" : "default"),
+      background_blur:
+        this._config.background_blur !== undefined ? this._config.background_blur : 18,
+      card_background:
+        this._config.card_background ||
+        "var(--ha-card-background, var(--card-background-color, #1c1c1e))",
+      show_frame: this._config.show_frame !== false,
       bar_color: this._config.bar_color || "",
       bar_color_off: this._config.bar_color_off || "",
       bar_opacity: this._config.bar_opacity !== undefined ? this._config.bar_opacity : 0.85,
@@ -308,6 +316,10 @@ class LightSliderCardEditor extends HTMLElement {
       title: "",
       height: "Défaut : 48 px",
       border_radius: "Défaut : 14 px",
+      background_style:
+        "Choisissez un rendu de fond prêt à l'emploi ou utilisez un fond CSS personnalisé",
+      background_blur: "Défaut : 18 px (utilisé pour Blur et Glass)",
+      card_background: "Utilisé uniquement si le mode est Personnalisé",
       bar_color: "Défaut : linear-gradient(90deg, #ff9800, #ffcc02)",
       bar_color_off: "Défaut : #3a3a3a",
       bar_opacity: "Défaut : 0.85 (0 = transparent, 1 = opaque)",
@@ -323,6 +335,7 @@ class LightSliderCardEditor extends HTMLElement {
       mobile_slider_gap: "Espacement entre sliders en mode compact",
       mobile_slider_padding: "Marge gauche / droite en mode compact",
       mobile_icon_size: "Taille icône en mode compact (ex: 21px)",
+      show_frame: "Afficher le cadre de la carte",
     }
     appForm.schema = [
       { name: "title", selector: { text: {} } },
@@ -345,6 +358,29 @@ class LightSliderCardEditor extends HTMLElement {
           },
         ],
       },
+      {
+        name: "background_style",
+        selector: {
+          select: {
+            options: [
+              { value: "default", label: "Standard" },
+              { value: "transparent", label: "Transparent" },
+              { value: "gradient", label: "Dégradé" },
+              { value: "blur", label: "Flou" },
+              { value: "glass", label: "Glassmorphism" },
+              { value: "custom", label: "Personnalisé (CSS)" },
+            ],
+          },
+        },
+      },
+      {
+        name: "background_blur",
+        selector: {
+          number: { min: 0, max: 60, step: 1, unit_of_measurement: "px", mode: "slider" },
+        },
+      },
+      { name: "card_background", selector: { text: {} } },
+      { name: "show_frame", selector: { boolean: {} } },
       {
         name: "",
         type: "grid",
@@ -426,6 +462,10 @@ class LightSliderCardEditor extends HTMLElement {
       title: "Titre de la carte",
       height: "Hauteur du slider",
       border_radius: "Arrondi des coins",
+      background_style: "Mode de fond",
+      background_blur: "Flou du fond",
+      card_background: "Fond personnalisé CSS",
+      show_frame: "Afficher le cadre",
       bar_color: "Couleur barre ON (CSS)",
       bar_color_off: "Couleur barre OFF",
       bar_opacity: "Opacité barre ON",
@@ -452,6 +492,11 @@ class LightSliderCardEditor extends HTMLElement {
         if (v === "" || v === undefined) delete updated[k]
         else updated[k] = v
       }
+      if (updated.background_style !== "custom") {
+        delete updated.card_background
+      } else if (!updated.card_background) {
+        updated.card_background = "var(--ha-card-background, var(--card-background-color, #1c1c1e))"
+      }
       this._config = updated
       this._fire()
     })
@@ -468,6 +513,7 @@ class LightSliderCard extends HTMLElement {
     this.attachShadow({ mode: "open" })
     this._isDragging = false
     this._rowRefs = []
+    this._allPowerBtn = null
     this._lastEntityStates = new Map()
   }
 
@@ -492,6 +538,8 @@ class LightSliderCard extends HTMLElement {
     const mobileIconSize = Number.isFinite(parsedIconSize)
       ? `${Math.max(16, parsedIconSize - 3)}${iconUnit}`
       : baseIconSize
+    const backgroundStyle =
+      config.background_style || (config.card_background ? "custom" : "default")
 
     this._config = {
       title: config.title || "",
@@ -507,9 +555,12 @@ class LightSliderCard extends HTMLElement {
       show_percentage: config.show_percentage !== false,
       live_update: config.live_update || false,
       label_position: config.label_position || "above",
+      background_style: backgroundStyle,
       card_background:
         config.card_background ||
         "var(--ha-card-background, var(--card-background-color, #1c1c1e))",
+      background_blur: config.background_blur !== undefined ? config.background_blur : 18,
+      show_frame: config.show_frame !== false,
       compact_mobile: config.compact_mobile !== false,
       compact_breakpoint: config.compact_breakpoint || 560,
       mobile_height: config.mobile_height || Math.max(36, baseHeight - 8),
@@ -542,6 +593,7 @@ class LightSliderCard extends HTMLElement {
   }
 
   _cacheRowRefs() {
+    this._allPowerBtn = this.shadowRoot.querySelector(".all-power-btn")
     this._rowRefs = this._config.entities.map((_, idx) => {
       const row = this.shadowRoot.querySelector(`.light-row[data-idx="${idx}"]`)
       if (!row) return null
@@ -558,6 +610,20 @@ class LightSliderCard extends HTMLElement {
         powerBtn: row.querySelector(".power-btn"),
       }
     })
+  }
+
+  _getEntityIds() {
+    return (this._config?.entities || [])
+      .map((entry) => this._parseEntity(entry).entityId)
+      .filter(Boolean)
+  }
+
+  _getAvailableEntityIds() {
+    return this._getEntityIds().filter((entityId) => this._hass?.states?.[entityId])
+  }
+
+  _hasAnyLightOn(entityIds = this._getAvailableEntityIds()) {
+    return entityIds.some((entityId) => this._hass?.states?.[entityId]?.state === "on")
   }
 
   /** Parse entity entry: supports string or {entity, name, icon} object */
@@ -577,6 +643,41 @@ class LightSliderCard extends HTMLElement {
     const d = document.createElement("span")
     d.textContent = s
     return d.innerHTML
+  }
+
+  _resolveCardBackground() {
+    const defaultBackground = "var(--ha-card-background, var(--card-background-color, #1c1c1e))"
+    const blurAmount = Number.isFinite(Number(this._config.background_blur))
+      ? Number(this._config.background_blur)
+      : 18
+    const style =
+      this._config.background_style || (this._config.card_background ? "custom" : "default")
+
+    switch (style) {
+      case "transparent":
+        return { background: "transparent" }
+      case "gradient":
+        return {
+          background: "linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
+        }
+      case "blur":
+        return {
+          background: "rgba(16, 24, 39, 0.52)",
+          backdropFilter: `blur(${blurAmount}px) saturate(130%)`,
+        }
+      case "glass":
+        return {
+          background: "linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
+          backdropFilter: `blur(${blurAmount}px) saturate(145%)`,
+        }
+      case "custom":
+        return {
+          background: this._config.card_background || defaultBackground,
+        }
+      case "default":
+      default:
+        return { background: defaultBackground }
+    }
   }
 
   /** Mise à jour légère (pas de reconstruction DOM) */
@@ -611,7 +712,47 @@ class LightSliderCard extends HTMLElement {
       const pb = refs.powerBtn
       if (pb) pb.className = `power-btn ${isOn ? "on" : ""}`
     })
+    this._syncAllPowerButton()
     this._syncStateCache()
+  }
+
+  _syncAllPowerButton() {
+    const button = this._allPowerBtn || this.shadowRoot?.querySelector(".all-power-btn")
+    if (!button) return
+
+    const entityIds = this._getAvailableEntityIds()
+    const anyOn = this._hasAnyLightOn(entityIds)
+    const label = anyOn ? "Éteindre toutes les lumières" : "Allumer toutes les lumières"
+    const stateLabel = anyOn ? "Allumé" : "Éteint"
+    const text = button.querySelector(".all-power-label")
+
+    button.classList.toggle("on", anyOn)
+    button.disabled = entityIds.length === 0
+    button.title = label
+    button.setAttribute("aria-label", label)
+    button.setAttribute("aria-pressed", anyOn ? "true" : "false")
+    if (text) text.textContent = stateLabel
+  }
+
+  _renderTitleRow() {
+    const entityIds = this._getAvailableEntityIds()
+    const anyOn = this._hasAnyLightOn(entityIds)
+    const label = anyOn ? "Éteindre toutes les lumières" : "Allumer toutes les lumières"
+    const stateLabel = anyOn ? "Allumé" : "Éteint"
+    const disabled = entityIds.length === 0 ? "disabled" : ""
+    const title = this._config.title
+      ? `<div class="card-title">${this._esc(this._config.title)}</div>`
+      : '<div class="card-title card-title--empty"></div>'
+
+    return `
+      <div class="card-title-row">
+        ${title}
+        <button class="all-power-btn ${anyOn ? "on" : ""}" title="${label}" aria-label="${label}" aria-pressed="${anyOn ? "true" : "false"}" ${disabled}>
+          <ha-icon icon="mdi:power"></ha-icon>
+          <span class="all-power-label">${stateLabel}</span>
+        </button>
+      </div>
+    `
   }
 
   _render() {
@@ -622,30 +763,121 @@ class LightSliderCard extends HTMLElement {
     }
 
     const entities = this._config.entities
+    const cardBackground = this._resolveCardBackground()
+    const showFrame = this._config.show_frame !== false
+    const cardTagStart = showFrame ? "<ha-card>" : '<div class="lsc-card lsc-card--frameless">'
+    const cardTagEnd = showFrame ? "</ha-card>" : "</div>"
 
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
         }
-        ha-card {
-                    --lsc-on-color: ${this._config.bar_color};
-                    --lsc-off-color: ${this._config.bar_color_off};
-                    --lsc-on-opacity: ${this._config.bar_opacity};
-                    --lsc-icon-size: ${this._config.icon_size};
+        ha-card,
+        .lsc-card {
+          --lsc-on-color: ${this._config.bar_color};
+          --lsc-off-color: ${this._config.bar_color_off};
+          --lsc-on-opacity: ${this._config.bar_opacity};
+          --lsc-icon-size: ${this._config.icon_size};
           padding: 16px ${this._config.slider_padding}px;
-          background: ${this._config.card_background};
+          background: ${cardBackground.background};
+          ${cardBackground.backdropFilter ? `backdrop-filter: ${cardBackground.backdropFilter};` : ""}
+          ${cardBackground.backdropFilter ? `-webkit-backdrop-filter: ${cardBackground.backdropFilter};` : ""}
           border-radius: 16px;
           overflow: hidden;
-                    border: 1px solid var(--divider-color, rgba(127,127,127,0.3));
-                    border: 1px solid color-mix(in srgb, var(--divider-color, rgba(127,127,127,0.3)) 65%, transparent);
+          ${showFrame ? "--ha-card-border-width: 1px;\n          border: 1px solid color-mix(in srgb, var(--divider-color, rgba(127,127,127,0.3)) 65%, transparent);\n          box-shadow: var(--ha-card-box-shadow, none);" : "border: 0;\n          outline: 0;\n          box-shadow: none;"}
+        }
+        .lsc-card--frameless {
+          display: block;
+        }
+        .card-title-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 16px;
+          padding: 0 2px;
+          min-height: 32px;
         }
         .card-title {
+          flex: 1;
           font-size: 18px;
           font-weight: 600;
           color: var(--primary-text-color, #fff);
-          margin-bottom: 16px;
-          padding: 0 2px;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .card-title--empty {
+          flex: 1;
+        }
+        .all-power-btn {
+          flex: 0 0 auto;
+          min-width: 88px;
+          width: auto;
+          height: 32px;
+          border: none;
+          outline: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border-radius: 8px;
+          padding: 0 10px;
+          background: rgba(255,255,255,0.07);
+          transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.12s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .all-power-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        }
+        .all-power-btn.on {
+          background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.14);
+          background: color-mix(in srgb, var(--state-light-active-color, var(--primary-color, #03a9f4)) 16%, transparent);
+        }
+        .all-power-btn.on::before {
+          background: var(--state-light-active-color, var(--primary-color, #03a9f4));
+          opacity: 0.12;
+        }
+        .all-power-btn ha-icon {
+          --mdc-icon-size: 20px;
+          color: var(--primary-color, #03a9f4);
+          transition: color 0.25s ease, filter 0.25s ease;
+          z-index: 1;
+        }
+        .all-power-label {
+          color: var(--primary-text-color, #fff);
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1;
+          white-space: nowrap;
+          z-index: 1;
+        }
+        .all-power-btn.on ha-icon {
+          color: var(--state-light-active-color, var(--primary-color, #03a9f4));
+          filter: none;
+        }
+        .all-power-btn.on .all-power-label {
+          color: var(--state-light-active-color, var(--primary-color, #03a9f4));
+        }
+        .all-power-btn:active {
+          transform: scale(0.94);
+        }
+        .all-power-btn:focus-visible {
+          outline: 2px solid var(--primary-color, #03a9f4);
+          outline-offset: 2px;
+        }
+        .all-power-btn:disabled {
+          cursor: not-allowed;
+          opacity: 0.45;
         }
         .light-row {
           display: flex;
@@ -684,7 +916,7 @@ class LightSliderCard extends HTMLElement {
           justify-content: center;
         }
         .light-icon ha-icon {
-                    --mdc-icon-size: var(--lsc-icon-size);
+          --mdc-icon-size: var(--lsc-icon-size);
           color: var(--secondary-text-color, #aaa);
         }
         .light-icon.on ha-icon {
@@ -806,8 +1038,8 @@ class LightSliderCard extends HTMLElement {
           z-index: 1;
         }
         .power-btn.on ha-icon {
-          color: #ffcc02;
-          filter: drop-shadow(0 0 6px rgba(255, 204, 2, 0.6));
+          color: var(--state-light-active-color, var(--primary-color, #03a9f4));
+          filter: none;
         }
         .power-btn:active {
           transform: scale(0.94);
@@ -824,6 +1056,9 @@ class LightSliderCard extends HTMLElement {
         }
                 @media (prefers-reduced-motion: reduce) {
                     .bar-fill,
+                    .all-power-btn,
+                    .all-power-btn::before,
+                    .all-power-btn ha-icon,
                     .power-btn,
                     .power-btn::before,
                     .power-btn ha-icon {
@@ -834,12 +1069,21 @@ class LightSliderCard extends HTMLElement {
                   this._config.compact_mobile
                     ? `
                 @media (max-width: ${this._config.compact_breakpoint}px) {
-                    ha-card {
+                    ha-card,
+                    .lsc-card {
                         padding: 12px ${this._config.mobile_slider_padding}px;
+                    }
+                    .card-title-row {
+                        margin-bottom: 12px;
                     }
                     .card-title {
                         font-size: 16px;
-                        margin-bottom: 12px;
+                    }
+                    .all-power-btn {
+                        min-width: 82px;
+                        width: auto;
+                        height: 30px;
+                        padding: 0 8px;
                     }
                     .light-row {
                         margin-bottom: ${this._config.mobile_slider_gap}px;
@@ -865,10 +1109,10 @@ class LightSliderCard extends HTMLElement {
                     : ""
                 }
       </style>
-      <ha-card>
-        ${this._config.title ? `<div class="card-title">${this._esc(this._config.title)}</div>` : ""}
+      ${cardTagStart}
+        ${this._renderTitleRow()}
         ${entities.map((entry, idx) => this._renderEntity(entry, idx)).join("")}
-      </ha-card>
+      ${cardTagEnd}
     `
 
     // Bind events after rendering
@@ -877,6 +1121,7 @@ class LightSliderCard extends HTMLElement {
       this._bindEvents(entityId, idx)
     })
     this._cacheRowRefs()
+    this._bindAllPowerButton()
     this._syncStateCache()
 
     this._rendered = true
@@ -1052,6 +1297,21 @@ class LightSliderCard extends HTMLElement {
     })
   }
 
+  _bindAllPowerButton() {
+    const button = this._allPowerBtn
+    if (!button) return
+
+    button.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const entityIds = this._getAvailableEntityIds()
+      if (!entityIds.length) return
+
+      const anyOn = this._hasAnyLightOn(entityIds)
+      this._hass.callService("light", anyOn ? "turn_off" : "turn_on", { entity_id: entityIds })
+      window.dispatchEvent(new CustomEvent("haptic", { detail: "light" }))
+    })
+  }
+
   getCardSize() {
     if (!this._config) return 3
     const count = this._config.entities ? this._config.entities.length : 1
@@ -1090,7 +1350,7 @@ window.customCards.push({
 })
 
 console.info(
-  "%c LIGHT-SLIDER-CARD %c v1.2.0 ",
+  "%c LIGHT-SLIDER-CARD %c v1.3.1 ",
   "color: #fff; background: #ff9800; font-weight: bold; padding: 2px 6px; border-radius: 4px 0 0 4px;",
   "color: #ff9800; background: #1c1c1e; font-weight: bold; padding: 2px 6px; border-radius: 0 4px 4px 0;"
 )

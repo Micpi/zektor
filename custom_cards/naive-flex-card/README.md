@@ -8,7 +8,8 @@
 [![Version](https://img.shields.io/github/v/release/Micpi/naive-flex-card?style=for-the-badge&label=Version)](https://github.com/Micpi/naive-flex-card/releases/latest)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mickaelpila)
 
-**Carte Lovelace modulaire et paramétrique pour composer des interfaces d'action polyvalentes.**  
+**Carte Lovelace modulaire et paramétrique pour composer des interfaces d'action polyvalentes.**
+
 Configurez visuellement styles, actions et entités pour créer des cartes unifiées et réutilisables.
 
 </div>
@@ -24,9 +25,11 @@ Points clefs:
 
 - Configuration simple (presets + options directes)
 - Configuration complete (actions, styles, couleurs, dimensions)
+- Sliders unifies avec rendu type Light Slider Card
+- Textes configurables via `labels` pour eviter les libelles anglais
 - Editeur 100% visuel (aucune saisie JSON obligatoire)
 - Actions natives visuelles: tap, hold, double tap
-- Sections repliables type carte standard (General, Actions, Style, etc.)
+- Sections repliables type carte standard (General, Actions, Styles, Defaults)
 - Pickers visuels pour entites, couleurs et icones
 - Groupes de boutons activables/desactivables, au choix
 - Preset visuel navbar_popup inspire du look navbar/media
@@ -69,7 +72,7 @@ button_row:
   min_button_width: 72
   max_button_width: 132
   buttons:
-    - label: Off
+    - label: Éteint
       icon: mdi:power
       action: call-service
       service: light.turn_off
@@ -79,6 +82,11 @@ button_row:
       service: light.turn_on
       service_data:
         brightness_pct: 50
+labels:
+  toggle: Basculer
+  brightness: Luminosité
+  on: Allumé
+  off: Éteint
 ```
 
 ## 🧪 Exemple cover
@@ -120,6 +128,7 @@ button_row:
 - `style.shape`: `rounded | square | pill`
 - `style.appearance`: `solid | glass | outline`
 - `style.active_color`, `style.background_color`, `style.text_color`
+- `labels.*`: textes visibles de la carte (badges, boutons, etats, sliders)
 - `button_row.enabled`, `button_row.scroll`
 - `button_row.min_button_width`, `button_row.max_button_width`, `button_row.button_width`
 - `button_row.buttons[]`: actions rapides custom (editees visuellement dans l'UI)
@@ -135,6 +144,27 @@ Chaque bouton accepte:
 - `service` + `service_data` (si `call-service`)
 - `value` (volume, de 0 a 1) pour `set-value`
 - `position` (cover, de 0 a 100) pour `set-value`
+
+## 🗣️ Textes personnalisables
+
+La carte fournit des libelles francais par defaut. Tous les textes visibles principaux peuvent etre ajustes:
+
+```yaml
+labels:
+  badge_light: Lumière
+  badge_volume: Son
+  toggle: Basculer
+  brightness: Luminosité
+  brightness_down: "- Luminosité"
+  brightness_up: "+ Luminosité"
+  volume: Volume
+  open: Ouvrir
+  stop: Arrêter
+  close: Fermer
+  on: Allumé
+  off: Éteint
+  unavailable: Entité introuvable
+```
 
 ## 🛠️ Editeur
 
