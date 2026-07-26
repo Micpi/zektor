@@ -4,5 +4,9 @@
   "filename": "alpha-area-card.js",
   "render_readme": true,
   "homeassistant": "2024.1.0",
+<<<<<<< HEAD
   "version": "1.2.11"
+=======
+  "version": "1.0.2"
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 }

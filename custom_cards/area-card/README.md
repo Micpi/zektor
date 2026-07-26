@@ -19,6 +19,7 @@ Combinez image, capteurs et commandes dans un composant lisible, mobile-first et
 
 - ajout Lovelace vierge: aucun salon/cuisine/exemple n'est injecte par defaut
 - prise en charge native des zones Home Assistant
+<<<<<<< HEAD
 - editeur graphique integre avec sections `General`, `Entites` et `Apparence`, avec pickers natifs Home Assistant pour icones, images et couleurs
 - affichage optimise des capteurs, alertes, toggles et entites secondaires
 - options modernes de l'Area card: `display_type`, `aspect_ratio`, `color`, `sensor_classes`, `alert_classes`, `features_position`
@@ -33,6 +34,10 @@ Combinez image, capteurs et commandes dans un composant lisible, mobile-first et
 - support `features: [{ type: area-controls }]` avec filtres `controls`
 - actions avancees configurees directement dans chaque entite: `tap_action`, `hold_action`, `double_tap_action`
 - filtres de domaines, tri et limitation du volume d'entites
+=======
+- editeur graphique integre pour les entites, styles et actions
+- affichage de capteurs, toggles et liste d'entites secondaires
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 - rendu concis et rapide, avec rafraichissement limite aux changements utiles
 
 ## 📦 Installation
@@ -134,6 +139,7 @@ features_position: inline
 
 - title: titre affiche sur la carte
 - area: identifiant de zone Home Assistant
+<<<<<<< HEAD
 - display_type: rendu `picture`, `camera`, `icon` ou `compact`
 - icon: icone de carte/zone surchargeable depuis l'editeur
 - image: image de fond (`/local/...`, URL ou image choisie depuis le picker media Home Assistant)
@@ -144,9 +150,12 @@ features_position: inline
 - styles.title_font_size: taille du texte du titre (`18px`, `1.3rem`, etc.)
 - color: token Home Assistant ou couleur hex pour l'accent
 - auto_area_entities: auto-remplissage depuis la zone quand la liste d'entites est vide
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 - entities: entites secondaires affichees dans la carte
 - entity_defaults: valeurs par defaut appliquees aux entites (`position`, `display_mode`, `show_name`, `show_state`, couleurs)
 - hide_unavailable: masque les entites indisponibles
+<<<<<<< HEAD
 - include_domains: liste de domaines a inclure (ex: light,switch)
 - exclude_domains: liste de domaines a exclure (ex: sensor,binary_sensor)
 - exclude_entities: entites a exclure des capteurs, alertes et controles
@@ -156,6 +165,9 @@ features_position: inline
 - features_position: `bottom` ou `inline`
 - entity_sort: tri des entites (`none`, `name`, `domain`)
 - max_entities: limite le nombre d'entites affichees (`0` = illimite)
+=======
+- tap_action: action principale au clic
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 - styles: apparence visuelle et variantes de presentation
 - darken_image: assombrit le fond image pour mieux detacher le texte
 - shadow: active l'ombre de carte

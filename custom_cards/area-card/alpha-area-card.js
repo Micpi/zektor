@@ -34,6 +34,7 @@ const TOGGLE_DOMAINS = new Set([
   "automation",
 ])
 
+<<<<<<< HEAD
 /**
  * Actions supportees pour les boutons d entites.
  */
@@ -328,6 +329,32 @@ const DEFAULT_CONFIG = {
   entities: [],
   entity_defaults: { ...ENTITY_DEFAULTS },
   styles: { ...STYLE_DEFAULTS },
+=======
+const DEFAULT_CONFIG = {
+  title: "Cuisine",
+  area: "cuisine",
+  hide_unavailable: false,
+  tap_action: {
+    action: "navigate",
+    navigation_path: "/lovelace/cuisine",
+  },
+  entities: [
+    "light.cuisine",
+    "media_player.sam_cuisine",
+    "sensor.maison_zone_etage_circuit_0_current_temperature",
+  ],
+  styles: {
+    button_icon_color_on: "#c7a975",
+    button_icon_color_off: "#f0f0f0",
+    badge_text_color: "#0667c1",
+    button_light_color_on: "#c7a975",
+    badge_background: "#e8f359",
+    title_font_weight: "300",
+    title_text_transform: "capitalize",
+    title_text_shadow: "2px 2px 1px black",
+    image_blur: "2px",
+  },
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   darken_image: true,
   shadow: false,
   force_dialog: false,
@@ -399,6 +426,7 @@ const parseEntitiesText = (text) =>
     .map((item) => item.trim())
     .filter(Boolean)
 
+<<<<<<< HEAD
 /**
  * Convertit une liste texte en domaines normalises.
  */
@@ -637,6 +665,8 @@ const normalizeActionConfig = (actionConfig, fallbackAction = "more-info") => {
 /**
  * Formate un nombre avec les helpers HA quand ils existent.
  */
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 const formatNumber = (hass, value, precision) => {
   const numeric = Number(value)
   if (Number.isNaN(numeric)) {
@@ -952,6 +982,7 @@ class AlphaAreaCard extends HTMLElement {
     }
     // Signature du dernier rendu, utile pour couper les rerenders identiques.
     this._lastStateSnapshot = ""
+<<<<<<< HEAD
     // Timers de tap par entite pour distinguer tap simple et double tap.
     this._entityClickTimers = new Map()
     // Handlers binds une seule fois afin de pouvoir les retirer proprement a chaque rendu.
@@ -960,6 +991,10 @@ class AlphaAreaCard extends HTMLElement {
     this._boundOnEntityContextMenu = this._onEntityContextMenu.bind(this)
     this._boundOnEntityPointerDown = this._onEntityPointerDown.bind(this)
     this._boundOnEntityPointerEnd = this._onEntityPointerEnd.bind(this)
+=======
+    this._boundOnCardClick = this._onCardClick.bind(this)
+    this._boundOnEntityClick = this._onEntityClick.bind(this)
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   }
 
   /**
@@ -974,9 +1009,15 @@ class AlphaAreaCard extends HTMLElement {
         ...deepClone(DEFAULT_CONFIG.styles),
         ...(incoming.styles || {}),
       },
+<<<<<<< HEAD
       entity_defaults: {
         ...deepClone(DEFAULT_CONFIG.entity_defaults),
         ...(incoming.entity_defaults || {}),
+=======
+      tap_action: {
+        ...deepClone(DEFAULT_CONFIG.tap_action),
+        ...(config?.tap_action || {}),
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
       },
     }
 
@@ -984,6 +1025,7 @@ class AlphaAreaCard extends HTMLElement {
       throw new Error("Le parametre entities doit etre un tableau.")
     }
 
+<<<<<<< HEAD
     merged.include_domains = Array.isArray(merged.include_domains)
       ? merged.include_domains.map((domain) => safeText(domain).toLowerCase()).filter(Boolean)
       : parseDomainsText(merged.include_domains)
@@ -1018,6 +1060,8 @@ class AlphaAreaCard extends HTMLElement {
       "button"
     )
 
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
     this.config = merged
     this._computeRenderModel()
     this._render()
@@ -1194,6 +1238,7 @@ class AlphaAreaCard extends HTMLElement {
     const configured =
       hasExplicitEntities
         ? this.config.entities
+<<<<<<< HEAD
         : shouldUseAreaEntities
           ? areaEntityIds
           : []
@@ -1212,11 +1257,17 @@ class AlphaAreaCard extends HTMLElement {
     const areaControls = this._getAreaControls()
 
     let parsedEntities = configured
+=======
+        : resolveAreaEntities(hass, areaId)
+
+    const parsedEntities = configured
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
       .map(parseEntityConfig)
       .filter(Boolean)
       .filter((item) => item.entity)
       .filter((item) => !excludedEntities.has(item.entity))
 
+<<<<<<< HEAD
     if (includeDomains.size) {
       parsedEntities = parsedEntities.filter((item) => {
         const domain = safeText(item.entity).split(".")[0]
@@ -1265,6 +1316,8 @@ class AlphaAreaCard extends HTMLElement {
       parsedEntities = parsedEntities.slice(0, maxEntities)
     }
 
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
     const entitiesDialog = []
     const entitiesToggle = []
     const entitiesSensors = []
@@ -1535,6 +1588,7 @@ class AlphaAreaCard extends HTMLElement {
     }
   }
 
+<<<<<<< HEAD
   /**
    * Construit l URL camera_proxy relative pour Home Assistant.
    */
@@ -1577,6 +1631,13 @@ class AlphaAreaCard extends HTMLElement {
     const width = Number(ratioMatch[1])
     const height = Number(ratioMatch[2] || 1)
     return width > 0 && height > 0 ? `${width} / ${height}` : "16 / 9"
+=======
+  _onCardClick() {
+    if (!this._hass || !this.config) {
+      return
+    }
+    performAction(this, this._hass, this.config, this.config.tap_action || { action: "more-info" })
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   }
 
   /**
@@ -1647,6 +1708,7 @@ class AlphaAreaCard extends HTMLElement {
       return
     }
 
+<<<<<<< HEAD
     const config = this._findEntityConfig(entityId)
     if (!config) {
       return
@@ -1721,6 +1783,8 @@ class AlphaAreaCard extends HTMLElement {
    * Retrouve la configuration rendue pour une entite.
    */
   _findEntityConfig(entityId) {
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
     const list = [
       ...this._renderModel.entitiesDialog,
       ...this._renderModel.entitiesToggle,
@@ -1728,6 +1792,7 @@ class AlphaAreaCard extends HTMLElement {
       ...this._renderModel.entitiesAlerts,
       ...this._renderModel.sensorSummaries,
     ]
+<<<<<<< HEAD
     return list.find((item) => item.entity === entityId)
   }
 
@@ -1760,15 +1825,20 @@ class AlphaAreaCard extends HTMLElement {
    */
   _runEntityAction(entityConfig, actionKey) {
     if (!this._hass || !entityConfig) {
+=======
+    const config = list.find((item) => item.entity === entityId)
+    if (!config) {
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
       return
     }
 
-    const defaultAction = this._defaultEntityAction(entityConfig, actionKey)
-    const selectedAction = entityConfig[actionKey] || defaultAction
-    const fallbackAction = actionKey === "tap_action" ? "more-info" : "none"
-    const normalized = normalizeActionConfig(selectedAction, fallbackAction)
+    const domain = entityId.split(".")[0]
+    const defaultAction =
+      this._renderModel.entitiesToggle.includes(config) && TOGGLE_DOMAINS.has(domain)
+        ? { action: "toggle" }
+        : { action: "more-info" }
 
-    performAction(this, this._hass, entityConfig, normalized)
+    performAction(this, this._hass, config, config.tap_action || defaultAction)
   }
 
   /**
@@ -2687,6 +2757,7 @@ class AlphaAreaCard extends HTMLElement {
       </ha-card>
     `
 
+<<<<<<< HEAD
     this.shadowRoot.querySelectorAll("button.entity").forEach((button) => {
       button.removeEventListener("click", this._boundOnEntityClick)
       button.removeEventListener("dblclick", this._boundOnEntityDoubleClick)
@@ -2702,6 +2773,17 @@ class AlphaAreaCard extends HTMLElement {
       button.addEventListener("pointerup", this._boundOnEntityPointerEnd)
       button.addEventListener("pointercancel", this._boundOnEntityPointerEnd)
       button.addEventListener("pointerleave", this._boundOnEntityPointerEnd)
+=======
+    const cardNode = this.shadowRoot.querySelector("ha-card")
+    if (cardNode) {
+      cardNode.removeEventListener("click", this._boundOnCardClick)
+      cardNode.addEventListener("click", this._boundOnCardClick)
+    }
+
+    this.shadowRoot.querySelectorAll("button.entity").forEach((button) => {
+      button.removeEventListener("click", this._boundOnEntityClick)
+      button.addEventListener("click", this._boundOnEntityClick)
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
     })
   }
 }
@@ -2717,9 +2799,12 @@ class AlphaAreaCardEditor extends LitElement {
     return {
       hass: { type: Object },
       config: { type: Object },
+<<<<<<< HEAD
       _jsonErrors: { type: Object },
       _activeEntityTab: { type: String },
       _activeEntityIndex: { type: Number },
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
     }
   }
 
@@ -2735,6 +2820,7 @@ class AlphaAreaCardEditor extends LitElement {
         ...DEFAULT_CONFIG.styles,
         ...(incoming.styles || {}),
       },
+<<<<<<< HEAD
       entity_defaults: {
         ...DEFAULT_CONFIG.entity_defaults,
         ...(incoming.entity_defaults || {}),
@@ -2767,12 +2853,20 @@ class AlphaAreaCardEditor extends LitElement {
       ? this._activeEntityIndex
       : 0
     this._jsonErrors = {}
+=======
+      tap_action: {
+        ...DEFAULT_CONFIG.tap_action,
+        ...(config.tap_action || {}),
+      },
+    }
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   }
 
   /**
    * Emet la configuration nettoyee vers Lovelace.
    */
   _emit(config) {
+<<<<<<< HEAD
     this.dispatchEvent(
       new CustomEvent("config-changed", {
         detail: { config: this._pruneConfig(config) },
@@ -2780,6 +2874,9 @@ class AlphaAreaCardEditor extends LitElement {
         composed: true,
       })
     )
+=======
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config } }))
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   }
 
   /**
@@ -2899,6 +2996,7 @@ class AlphaAreaCardEditor extends LitElement {
     this._setValue(path, event.target.checked)
   }
 
+<<<<<<< HEAD
   /**
    * Valide puis sauvegarde une taille CSS.
    */
@@ -3001,6 +3099,8 @@ class AlphaAreaCardEditor extends LitElement {
   /**
    * Convertit une couleur CSS simple en hex pour le picker.
    */
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   _toHexColor(value, fallback = "#c7a975") {
     if (!value || typeof value !== "string") return fallback
     const normalized = value.trim()
@@ -3130,19 +3230,11 @@ class AlphaAreaCardEditor extends LitElement {
   _setEntity(index, value) {
     const entities = this.config.entities || []
     const updated = [...entities]
-    const current = updated[index]
-
-    if (current && typeof current === "object") {
-      updated[index] = {
-        ...current,
-        entity: value,
-      }
-    } else {
-      updated[index] = value
-    }
+    updated[index] = value
     this._setValue("entities", updated)
   }
 
+<<<<<<< HEAD
   /**
    * Deplace une entite dans l ordre d affichage.
    */
@@ -3633,6 +3725,8 @@ class AlphaAreaCardEditor extends LitElement {
   /**
    * Rend la liste compacte des entites configurees.
    */
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
   _renderEntitiesField() {
     const entities = this.config.entities || []
 
@@ -3648,6 +3742,7 @@ class AlphaAreaCardEditor extends LitElement {
         ${entities.length === 0
           ? html`<div class="empty-state">Aucune entité sélectionnée</div>`
           : html`<div class="entities-list">
+<<<<<<< HEAD
               ${entities.map((entity, index) => {
                 const parsed = parseEntityConfig(entity)
                 const entityId = parsed?.entity || ""
@@ -3695,6 +3790,17 @@ class AlphaAreaCardEditor extends LitElement {
                         ↓
                       </button>
                     </div>
+=======
+              ${entities.map(
+                (entity, index) => html`
+                  <div class="entity-row">
+                    <input
+                      type="text"
+                      .value="${entity}"
+                      placeholder="ex: light.salon"
+                      @input="${(event) => this._setEntity(index, event.target.value)}"
+                    />
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
                     <button
                       class="remove-button"
                       @click="${() => this._removeEntity(index)}"
@@ -3703,6 +3809,7 @@ class AlphaAreaCardEditor extends LitElement {
                     >
                       ✕
                     </button>
+<<<<<<< HEAD
                     ${isAdvanced
                       ? html`<div class="entity-hint">
                           Mode avancé actif (name/icon/attribute/actions personnalisés)
@@ -3711,6 +3818,11 @@ class AlphaAreaCardEditor extends LitElement {
                   </div>
                 `
               })}
+=======
+                  </div>
+                `
+              )}
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
             </div>`}
       </div>
     `
@@ -3930,11 +4042,14 @@ class AlphaAreaCardEditor extends LitElement {
     if (!this.config) return html``
 
     const areas = this.hass?.areas ? Object.values(this.hass.areas) : []
+    const tapActionType = this.config.tap_action?.action || "navigate"
 
     return html`
       <div class="form">
+        <div class="editor-title">Alpha Area</div>
+
         <details open>
-          <summary>General</summary>
+          <summary>Général</summary>
           <div class="section-content">
             <label>Titre</label>
             <input
@@ -3951,7 +4066,6 @@ class AlphaAreaCardEditor extends LitElement {
               .value="${this.config.area || ""}"
               @change="${(event) => this._setValue("area", event.target.value)}"
             >
-              <option value="">Aucune zone</option>
               ${areas.map(
                 (area) => html`
                   <option value="${area.area_id}" ?selected="${this.config.area === area.area_id}">
@@ -3961,6 +4075,7 @@ class AlphaAreaCardEditor extends LitElement {
               )}
             </select>
 
+<<<<<<< HEAD
             <label>
               <input
                 type="checkbox"
@@ -3969,6 +4084,9 @@ class AlphaAreaCardEditor extends LitElement {
               />
               Auto-remplir les entités depuis la zone si la liste est vide
             </label>
+=======
+            ${this._renderEntitiesField()}
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 
             <label>
               <input
@@ -4048,6 +4166,7 @@ class AlphaAreaCardEditor extends LitElement {
               />
               Assombrir l'image de fond
             </label>
+<<<<<<< HEAD
 
             <label>Taille du titre</label>
             <input
@@ -4055,6 +4174,113 @@ class AlphaAreaCardEditor extends LitElement {
               placeholder="20px, 1.3rem"
               @change="${(event) => this._onCssSize("styles.title_font_size", event)}"
             />
+=======
+
+            <label>
+              <input
+                type="checkbox"
+                .checked="${!!this.config.shadow}"
+                @change="${(event) => this._onBoolean("shadow", event)}"
+              />
+              Ombre sur les icônes
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                .checked="${!!this.config.force_dialog}"
+                @change="${(event) => this._onBoolean("force_dialog", event)}"
+              />
+              Forcer plus d'infos (force_dialog)
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                .checked="${!!this.config.state_color}"
+                @change="${(event) => this._onBoolean("state_color", event)}"
+              />
+              Couleur d'état HA (state_color)
+            </label>
+          </div>
+        </details>
+
+        <details>
+          <summary>Actions</summary>
+          <div class="section-content">
+            <label>Action au clic</label>
+            <select
+              .value="${tapActionType}"
+              @change="${(event) => {
+                const current = this.config.tap_action || {}
+                this._setValue("tap_action", { ...current, action: event.target.value })
+              }}"
+            >
+              <option value="navigate">navigate</option>
+              <option value="more-info">more-info</option>
+              <option value="toggle">toggle</option>
+              <option value="url">url</option>
+              <option value="call-service">call-service</option>
+              <option value="none">none</option>
+            </select>
+
+            ${tapActionType === "navigate"
+              ? html`
+                  <label>Chemin de navigation</label>
+                  <input
+                    .value="${this.config.tap_action?.navigation_path || ""}"
+                    placeholder="/lovelace/cuisine"
+                    @input="${(event) => this._onInput("tap_action.navigation_path", event)}"
+                  />
+                `
+              : ""}
+            ${tapActionType === "url"
+              ? html`
+                  <label>URL</label>
+                  <input
+                    .value="${this.config.tap_action?.url_path || ""}"
+                    placeholder="https://example.com"
+                    @input="${(event) => this._onInput("tap_action.url_path", event)}"
+                  />
+                `
+              : ""}
+            ${tapActionType === "call-service"
+              ? html`
+                  <label>Service</label>
+                  <input
+                    .value="${this.config.tap_action?.service || ""}"
+                    placeholder="light.turn_on"
+                    @input="${(event) => this._onInput("tap_action.service", event)}"
+                  />
+                `
+              : ""}
+
+            <label>Image de fond (URL ou /local/...)</label>
+            <input
+              .value="${this.config.image || ""}"
+              placeholder="/local/images/cuisine.jpg"
+              @input="${(event) => this._onInput("image", event)}"
+            />
+          </div>
+        </details>
+
+        <details>
+          <summary>Styles</summary>
+          <div class="section-content">
+            ${this._renderColorField("Couleur icône ON", "styles.button_icon_color_on", "#c7a975")}
+            ${this._renderColorField(
+              "Couleur icône OFF",
+              "styles.button_icon_color_off",
+              "#f0f0f0"
+            )}
+            ${this._renderColorField(
+              "Couleur lumière ON",
+              "styles.button_light_color_on",
+              "#c7a975"
+            )}
+            ${this._renderColorField("Couleur texte badge", "styles.badge_text_color", "#0667c1")}
+            ${this._renderColorField("Fond badge", "styles.badge_background", "#e8f359")}
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 
             <label>Poids du titre (font-weight)</label>
             <input
@@ -4120,6 +4346,13 @@ class AlphaAreaCardEditor extends LitElement {
         padding: 8px 0;
       }
 
+      .editor-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--primary-text-color, #f9fafb);
+        padding: 4px 2px;
+      }
+
       details {
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 10px;
@@ -4156,6 +4389,7 @@ class AlphaAreaCardEditor extends LitElement {
         gap: 6px;
       }
 
+<<<<<<< HEAD
       .picker-field {
         display: grid;
         gap: 6px;
@@ -4182,6 +4416,8 @@ class AlphaAreaCardEditor extends LitElement {
         background: rgba(255, 255, 255, 0.02);
       }
 
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
       .color-row {
         display: grid;
         grid-template-columns: 54px 1fr;
@@ -4321,7 +4557,7 @@ class AlphaAreaCardEditor extends LitElement {
 
       .entity-row {
         display: grid;
-        grid-template-columns: 1fr auto 40px;
+        grid-template-columns: 1fr 40px;
         gap: 8px;
         align-items: center;
         background: rgba(255, 255, 255, 0.02);
@@ -4330,6 +4566,7 @@ class AlphaAreaCardEditor extends LitElement {
         padding: 8px;
       }
 
+<<<<<<< HEAD
       .entity-row-main {
         display: grid;
         gap: 2px;
@@ -4387,6 +4624,8 @@ class AlphaAreaCardEditor extends LitElement {
         font-size: 0.76rem;
       }
 
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
       .empty-state {
         text-align: center;
         padding: 16px;
@@ -4402,17 +4641,13 @@ class AlphaAreaCardEditor extends LitElement {
         width: 100%;
       }
 
-      ha-entity-picker {
-        width: 100%;
-      }
-
       @media (max-width: 720px) {
         .form {
           gap: 8px;
         }
 
         .entity-row {
-          grid-template-columns: 1fr auto 32px;
+          grid-template-columns: 1fr 32px;
         }
 
         .entity-detail-columns {

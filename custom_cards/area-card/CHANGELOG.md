@@ -1,5 +1,6 @@
 # Changelog
 
+<<<<<<< HEAD
 ## v1.2.11 - 2026-07-22
 
 - Date: 2026-07-22
@@ -509,6 +510,8 @@
 - Reduced accidental double-trigger behavior by disambiguating tap vs double tap.
 - Improved editor change propagation (`config-changed` bubbling/composed) for Lovelace integration compatibility.
 
+=======
+>>>>>>> 579b8cd275d407eeb0b2d8a7de832e38171fd16a
 ## v1.0.2 - 2026-06-01
 
 - feat(card): publish alpha-area-card v1.0.2
